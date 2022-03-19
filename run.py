@@ -1,8 +1,9 @@
-import cv2
 import argparse
 import os
 import sys
 from pathlib import Path
+
+import cv2
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -15,12 +16,13 @@ YOLO_ROOT = Path(os.path.relpath(YOLO_ROOT, Path.cwd()))  # relative
 
 from yolov5.models.common import DetectMultiBackend
 from yolov5.utils.datasets import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
-from streamers import LoadCSI, LoadWebcam
 from yolov5.utils.general import (LOGGER, check_file, check_img_size, check_imshow, check_requirements, colorstr,
                                   increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer,
                                   xyxy2xywh)
 from yolov5.utils.plots import Annotator, colors, save_one_box
 from yolov5.utils.torch_utils import select_device, time_sync
+from streamers import LoadCSI, LoadWebcam
+from updated_utils import path_with_date
 
 
 @torch.no_grad()
@@ -43,7 +45,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         visualize=False,  # visualize features
         update=False,  # update all models
         project=ROOT / 'output/detection',  # save results to project/name
-        name='exp',  # save results to project/name
+        name='dets',  # save results to project/name
         exist_ok=False,  # existing project/name ok, do not increment
         line_thickness=2,  # bounding box thickness (pixels)
         hide_labels=False,  # hide labels
@@ -51,6 +53,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
         csi=False,  # use Jetson CSI camera
+        date_output=False  # output files with dates instead of increments
         ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -61,8 +64,13 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         source = check_file(source)  # download
 
     # Directories
-    save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
-    (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+    if date_output:
+        save_dir = path_with_date(Path(project) / name)  # output with date
+    else:
+        save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
+
+    if not nosave:
+        (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     # Load model
     device = select_device(device)
@@ -196,7 +204,7 @@ def parse_opt():
     parser.add_argument('--source', type=str, default=YOLO_ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--data', type=str, default=YOLO_ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
-    parser.add_argument('--conf-thres', type=float, default=0.4, help='confidence threshold')
+    parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
@@ -211,11 +219,15 @@ def parse_opt():
     parser.add_argument('--visualize', action='store_true', help='visualize features')
     parser.add_argument('--update', action='store_true', help='update all models')
     parser.add_argument('--project', default=ROOT / 'output/detection', help='save results to project/name')
-    parser.add_argument('--name', default='exp', help='save results to project/name')
+    parser.add_argument('--name', default='dets', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--line-thickness', default=2, type=int, help='bounding box thickness (pixels)')
+    parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
+    parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
+    parser.add_argument('--csi', action='store_true', help='If model runs on Jetson and CSI Camera')
+    parser.add_argument('--date-output', action='store_true', help='If model runs on Jetson and CSI Camera')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(FILE.stem, opt)
@@ -223,7 +235,7 @@ def parse_opt():
 
 
 def main(opt):
-    #    check_requirements(exclude=('tensorboard', 'thop'))
+    # check_requirements(exclude=('tensorboard', 'thop'))
     run(**vars(opt))
 
 
