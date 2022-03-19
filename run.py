@@ -22,7 +22,7 @@ from yolov5.utils.general import (LOGGER, check_file, check_img_size, check_imsh
 from yolov5.utils.plots import Annotator, colors, save_one_box
 from yolov5.utils.torch_utils import select_device, time_sync
 from streamers import LoadCSI, LoadWebcam
-from updated_utils import path_with_date
+from extra_utils import path_with_date, calculate_distance
 
 
 @torch.no_grad()
@@ -53,7 +53,11 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
         csi=False,  # use Jetson CSI camera
-        date_output=False  # output files with dates instead of increments
+        date_output=False,  # output files with dates instead of increments
+        prod_output=False,  # save txt output for production purposes
+        focal_length=1000,  # focal length of camera in pixels
+        add_distance=False,  # add distance information for some classes
+        avg_height=1.75,  # average height of human being (for distance calculation)
         ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -80,12 +84,12 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # Dataloader
     if csi:
-        view_img = check_imshow()
+        view_img = check_imshow() if view_img else False
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)
         bs = len(dataset)  # batch_size
     elif webcam:
-        view_img = check_imshow()
+        view_img = check_imshow() if view_img else False
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
         bs = len(dataset)  # batch_size
@@ -117,9 +121,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
         dt[2] += time_sync() - t3
 
-        # Second-stage classifier (optional)
-        # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
-
         # Process predictions
         for i, det in enumerate(pred):  # per image
             seen += 1
@@ -128,6 +129,13 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 s += f'{i}: '
             else:
                 p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
+
+            # Set focal length.
+            img_height = im0.shape[0]
+            if img_height != 1080:
+                focal = focal_length * (img_height / 1080)
+            else:
+                focal = focal_length
 
             p = Path(p)  # to Path
             save_path = str(save_dir / p.name)  # im.jpg
@@ -147,6 +155,12 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
+                    d = 0  # Set distance as zero for default.
+                    if add_distance:
+                        # Distance
+                        obj_height = xyxy[3] - xyxy[1]  # Calculate length of height of bounding box of detected object
+                        d = calculate_distance(obj_height, focal, avg_height, cls)
+
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
@@ -155,10 +169,32 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
-                        label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                        lbl = f"{names[c]} | {conf:.2f} | {d[0]:.1f}m" if add_distance else f"{names[c]} | {conf:.2f}"
+                        label = None if hide_labels else (names[c] if hide_conf else lbl)
                         annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+
+                    if prod_output:
+                        # Converts xyxy points to x_center, y_center and width and height
+                        xywh_norm = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        xywh = xyxy2xywh(torch.tensor(xyxy).view(1, 4)).view(-1).tolist()  # unnormalized xywh
+                        c = int(cls)
+                        label = names[c]
+                        confidence = float(conf)
+                        line = [frame, label, c, confidence, *xywh, *xywh_norm]  # label format
+                        if add_distance:
+                            line.extend([*d])
+                        prod_text_path = str(save_dir / p.stem) + ".txt"
+                        if not os.path.isfile(prod_text_path) or os.stat(prod_text_path).st_size == 0:
+                            with open(prod_text_path, 'a') as f:
+                                out_txt = f"frame_id,id_type,id,confidence,x_center,y_center,x_width,y_width,"\
+                                          f"x_norm_center,y_norm_center,x_norm_width,y_norm_width," \
+                                          f"avg_distance,min_distance,max_distance\n"
+                                f.write(out_txt)
+                        with open(prod_text_path, 'a') as f:
+                            txt = ','.join(map(str, line))
+                            f.write(txt + '\n')
 
             # Stream results
             im0 = annotator.result()
@@ -226,8 +262,12 @@ def parse_opt():
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
-    parser.add_argument('--csi', action='store_true', help='If model runs on Jetson and CSI Camera')
-    parser.add_argument('--date-output', action='store_true', help='If model runs on Jetson and CSI Camera')
+    parser.add_argument('--csi', action='store_true', help='if model runs on Jetson and CSI Camera')
+    parser.add_argument('--date-output', action='store_true', help='save path as datetime')
+    parser.add_argument('--prod-output', action='store_true', help='text output for production purposes')
+    parser.add_argument('--focal-length', default=1000, type=int, help='focal length of camera in pixels')
+    parser.add_argument('--add-distance', action='store_true', help='text output for production purposes')
+    parser.add_argument('--avg-height', default=1.75, type=float, help='average height of human in meters')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(FILE.stem, opt)
