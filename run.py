@@ -119,7 +119,12 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
         # NMS
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
+        t4 = time_sync()
         dt[2] += time_sync() - t3
+
+        # Calculate fps.
+        fps = 1 / (t4 - t1)
+        print(f"FPS: {fps}")
 
         # Process predictions
         for i, det in enumerate(pred):  # per image
