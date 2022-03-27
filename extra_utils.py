@@ -1,5 +1,8 @@
+import cv2
 from pathlib import Path
 from datetime import datetime
+import numpy as np
+from yolov5.utils.general import is_docker, is_colab, LOGGER
 
 
 def path_with_date(path, mkdir=False):
@@ -45,3 +48,25 @@ def calculate_distance(pixel_height, focal_length, average_height, cls):
         d_min = 0
         d_max = 0
     return d, d_min, d_max
+
+
+# THIS PART IS NOT NEEDED RIGHT NOW!
+# THIS IS CHECKING CAMERA WITH JETSON UTILS!
+def check_imshow_jetson():
+    import jetson.utils
+    # Check if environment supports image displays
+    try:
+        # assert not is_docker(), 'cv2.imshow() is disabled in Docker environments'
+        assert not is_colab(), 'cv2.imshow() is disabled in Google Colab environments'
+        output = jetson.utils.videoOutput("display://0")
+        input = jetson.utils.videoSource("csi://0")
+        image = input.Capture(format='rgb8')
+        output.Render(image)
+        # cv2.imshow('test', np.zeros((1, 1, 3)))
+        # cv2.waitKey(1)
+        # cv2.destroyAllWindows()
+        # cv2.waitKey(1)
+        return True
+    except Exception as e:
+        LOGGER.warning(f'WARNING: Environment does not support cv2.imshow() or PIL Image.show() image displays\n{e}')
+        return False
