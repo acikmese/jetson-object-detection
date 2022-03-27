@@ -1,9 +1,9 @@
+import cv2
 import argparse
 import os
 import sys
 from pathlib import Path
 
-import cv2
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -22,7 +22,15 @@ from yolov5.utils.general import (LOGGER, check_file, check_img_size, check_imsh
 from yolov5.utils.plots import Annotator, colors, save_one_box
 from yolov5.utils.torch_utils import select_device, time_sync
 from streamers import LoadCSI, LoadWebcam
-from extra_utils import path_with_date, calculate_distance
+from extra_utils import check_imshow_jetson, path_with_date, calculate_distance
+
+# THESE MAY NOT NEEDED!
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["PYDEVD_WARN_EVALUATION_TIMEOUT"] = "15"
 
 
 @torch.no_grad()
