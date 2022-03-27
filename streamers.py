@@ -19,10 +19,11 @@ def gstreamer_pipeline(
     display_width=1640,
     display_height=1232,
     framerate=30,
-    flip_method=0,
+    flip_method=2,
 ):
     return (
-        "nvarguscamerasrc sensor-id=%d sensor-mode=%d ! "
+        "nvarguscamerasrc "
+        "sensor-id=%d sensor-mode=%d ! "
         "video/x-raw(memory:NVMM), "
         "width=(int)%d, height=(int)%d, "
         "format=(string)NV12, framerate=(fraction)%d/1 ! "
@@ -63,15 +64,8 @@ class LoadCSI:
         for i, s in enumerate(sources):  # index, source
             # Start thread to read frames from video stream
             st = f'{i + 1}/{n}: {s}... '
-            if 'youtube.com/' in s or 'youtu.be/' in s:  # if source is YouTube video
-                check_requirements(('pafy', 'youtube_dl==2020.12.2'))
-                import pafy
-                s = pafy.new(s).getbest(preftype="mp4").url  # YouTube URL
             s = eval(s) if s.isnumeric() else s  # i.e. s = '0' local webcam
-            cap = cv2.VideoCapture(gstreamer_pipeline(
-                sensor_id=s,
-                flip_method=2
-            ), cv2.CAP_GSTREAMER)
+            cap = cv2.VideoCapture(gstreamer_pipeline(sensor_id=s), cv2.CAP_GSTREAMER)
             assert cap.isOpened(), f'{st}Failed to open {s}'
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
