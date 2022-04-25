@@ -5,15 +5,15 @@ import numpy as np
 from yolov5.utils.general import is_docker, is_colab, LOGGER
 
 
-def path_with_date(path, mkdir=False):
+def path_with_date(path, date_time, mkdir=False):
     # Increment file or directory path, i.e. runs/exp --> runs/exp{sep}2, runs/exp{sep}3, ... etc.
     path = Path(path)  # os-agnostic
-    date = datetime.now(timezone.utc)
+    date = date_time
     date_str = f"{date.year}_{date.month}_{date.day}_{date.hour}_{date.minute}_{date.second}"
     path = path.joinpath(date_str)
     if mkdir:
         path.mkdir(parents=True, exist_ok=True)  # make directory
-    return path
+    return path, date_str
 
 
 def calculate_distance(pixel_height, focal_length, average_height, cls):
