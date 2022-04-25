@@ -1,6 +1,6 @@
 import cv2
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import numpy as np
 from yolov5.utils.general import is_docker, is_colab, LOGGER
 
@@ -8,7 +8,7 @@ from yolov5.utils.general import is_docker, is_colab, LOGGER
 def path_with_date(path, mkdir=False):
     # Increment file or directory path, i.e. runs/exp --> runs/exp{sep}2, runs/exp{sep}3, ... etc.
     path = Path(path)  # os-agnostic
-    date = datetime.utcnow()
+    date = datetime.now(timezone.utc)
     date_str = f"{date.year}_{date.month}_{date.day}_{date.hour}_{date.minute}_{date.second}"
     path = path.joinpath(date_str)
     if mkdir:
