@@ -46,7 +46,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         view_img=False,  # show results
         save_txt=False,  # save results to *.txt
-        save_conf=False,  # save confidences in --save-txt labels
         nosave=False,  # do not save images/videos
         classes=None,  # filter by class: --class 0, or --class 0 2 3
         update=False,  # update all models
@@ -60,14 +59,18 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         add_distance=False,  # add distance information for some classes
         avg_height=1.75,  # average height of human being (for distance calculation)
         ):
-    source = str(source)
-    save_img = True
-    zip_files = True
-    annotate_img = True
+    source = str(source)  # Set source
+
+    # SET PARAMETERS
+    save_img = True  # Save images in given interval
+    annotate_img = True  # Save annotated images or raw images
+    img_save_interval = 5  # in seconds
+    zip_files = True  # Zip files and transfer to given path
     zip_files_interval = 1 * 10  # in seconds
-    img_save_interval = 1  # in seconds
-    zip_txt_dir = ROOT / 'zip_txt_final'
-    zip_img_dir = ROOT / 'zip_img_final'
+    zip_txt_dir = ROOT / 'zip_txt_final'  # Where to put zipped text files
+    zip_img_dir = ROOT / 'zip_img_final'  # Where to put zipped images
+    check_mtp = False  # Check MTP connection with android when transferring zips
+    mtp_ready = True  # Set MTP ready for start. Set False if it is not available later
 
     # Load model
     device = select_device(device)
@@ -78,14 +81,12 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Dataloader
     view_img = check_imshow() if view_img else False
     cudnn.benchmark = True  # set True to speed up constant image size inference
-    # dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)
-    dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
+    dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)
+    # dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
     bs = len(dataset)  # batch_size
 
     # Focal length calibration.
     focal = None
-
-    utc_prev_time = datetime.now(timezone.utc)
 
     # Run inference
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
@@ -94,14 +95,17 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     first_run = True  # if first run, create directories for output
     new_dir_created = False  # if new directory created, it will zip folder and move to output path
 
+    utc_prev_time = datetime.now(timezone.utc)
     zip_timer = datetime.now()
 
     if zip_files:
         txt_zip_dir = Path(project) / name / 'tmp_txt_zips'
         txt_zip_dir.mkdir(parents=True, exist_ok=True)
+        zip_txt_dir.mkdir(parents=True, exist_ok=True)
         if save_img:
             img_zip_dir = Path(project) / name / 'tmp_img_zips'
             img_zip_dir.mkdir(parents=True, exist_ok=True)
+            zip_img_dir.mkdir(parents=True, exist_ok=True)
 
     for path, im, im0s, vid_cap, s in dataset:
         t1 = time_sync()
@@ -109,15 +113,17 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         utc_time = datetime.now(timezone.utc)
         utc_iso = utc_time.isoformat()
 
-        # Generate directory
+        # Check if it needs to create new folder after a specific time period.
         zip_timer_diff = (datetime.now() - zip_timer).total_seconds()
 
+        # Generate directory
         if (not nosave) and ((zip_timer_diff >= zip_files_interval) or first_run):
             save_dir, dir_name = path_with_date(Path(project) / name, utc_time)  # output with date
             txt_dir = save_dir.joinpath('txt')
             img_dir = save_dir.joinpath('images')
 
-            (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+            # Make dirs
+            (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)
             txt_dir.mkdir(parents=True, exist_ok=True)
             if save_img:
                 img_dir.mkdir(parents=True, exist_ok=True)
@@ -227,7 +233,12 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 cv2.imwrite(img_path_name, im0, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 utc_prev_time = utc_time
 
-        if zip_files and new_dir_created:
+        # Check if there is a MTP connection with display board.
+        if check_mtp:
+            if not any(fname.startswith('mtp') for fname in os.listdir('/run/user/1000/gvfs')):
+                mtp_ready = False
+
+        if zip_files and new_dir_created and mtp_ready:
             zip_txt_path = txt_zip_dir / old_dir_name
             shutil.move(old_txt_dir, zip_txt_path)
             shutil.make_archive(zip_txt_path, 'zip', zip_txt_path)
@@ -266,12 +277,11 @@ def parse_opt():
     parser.add_argument('--source', type=str, default=ROOT / 'streams.txt', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--data', type=str, default=YOLO_ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
-    parser.add_argument('--conf-thres', type=float, default=0.3, help='confidence threshold')
+    parser.add_argument('--conf-thres', type=float, default=0.35, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='show results')
-    parser.add_argument('--save-txt', action='store_true', help='save texts')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     parser.add_argument('--classes', nargs='+', type=int, default=[0, 2, 5, 7], help='filter by class: --classes 0 2')
     parser.add_argument('--name', default='ff', help='save results to project/name')
