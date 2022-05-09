@@ -62,11 +62,11 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     source = str(source)  # Set source
 
     # SET PARAMETERS
-    save_img = True  # Save images in given interval
-    annotate_img = True  # Save annotated images or raw images
-    img_save_interval = 5  # in seconds
+    save_img = False  # Save images in given interval
+    annotate_img = False  # Save annotated images or raw images
+    img_save_interval = 10  # in seconds
     zip_files = True  # Zip files and transfer to given path
-    zip_files_interval = 1 * 10  # in seconds
+    zip_files_interval = 1 * 60  # in seconds
     zip_txt_dir = ROOT / 'zip_txt_final'  # Where to put zipped text files
     zip_img_dir = ROOT / 'zip_img_final'  # Where to put zipped images
     check_mtp = False  # Check MTP connection with android when transferring zips
