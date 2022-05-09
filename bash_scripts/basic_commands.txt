@@ -1,0 +1,8 @@
+# Select Environment
+workon yolov5
+
+# Clear camera memory
+sudo systemctl restart nvargus-daemon
+
+# Framework service path
+/etc/systemd/system/firefly_object_detection.service
