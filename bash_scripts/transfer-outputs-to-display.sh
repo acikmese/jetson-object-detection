@@ -1,18 +1,18 @@
 #!/bin/bash
 
 # Transfer output data
-echo "Transfering output data!"
-adb push /home/ff/Desktop/jetson-object-detection/zip_txt_final/* /storage/emulated/0/fireplay/camera-project/data
-sudo rm -rf /home/ff/Desktop/jetson-object-detection/zip_txt_final/*
+echo "Transferring output data!"
+adb push /home/ff/Desktop/jetson-object-detection/zipped_data/* /storage/emulated/0/fireplay/camera-project/data
+sudo rm -rf /home/ff/Desktop/jetson-object-detection/zipped_data/*
 
 # Transfer logs
-echo "Transfering logs!"
-adb push /home/ff/Desktop/jetson-object-detection/zip_logs_final/* /storage/emulated/0/fireplay/camera-project/logs
-sudo rm -rf /home/ff/Desktop/jetson-object-detection/zip_logs_final/*
+echo "Transferring logs!"
+adb push /home/ff/Desktop/jetson-object-detection/zipped_logs/* /storage/emulated/0/fireplay/camera-project/logs
+sudo rm -rf /home/ff/Desktop/jetson-object-detection/zipped_logs/*
 
 # Transfer images data
-echo "Transfering images!"
-adb push /home/ff/Desktop/jetson-object-detection/zip_img_final/* /storage/emulated/0/fireplay/camera-project/image
-sudo rm -rf /home/ff/Desktop/jetson-object-detection/zip_img_final/*
+echo "Transferring images!"
+adb push /home/ff/Desktop/jetson-object-detection/zipped_images/* /storage/emulated/0/fireplay/camera-project/image
+sudo rm -rf /home/ff/Desktop/jetson-object-detection/zipped_images/*
 
 exit 0
