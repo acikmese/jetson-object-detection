@@ -3,6 +3,7 @@ import argparse
 import os
 import sys
 import shutil
+import logging
 from pathlib import Path
 from datetime import datetime, timezone
 from copy import deepcopy
@@ -62,15 +63,14 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     source = str(source)  # Set source
 
     # SET PARAMETERS
-    save_img = False  # Save images in given interval
-    annotate_img = False  # Save annotated images or raw images
+    save_img = True  # Save images in given interval
+    annotate_img = True  # Save annotated images or raw images
     img_save_interval = 10  # in seconds
     zip_files = True  # Zip files and transfer to given path
-    zip_files_interval = 1 * 60  # in seconds
-    zip_txt_dir = ROOT / 'zip_txt_final'  # Where to put zipped text files
-    zip_img_dir = ROOT / 'zip_img_final'  # Where to put zipped images
-    check_mtp = False  # Check MTP connection with android when transferring zips
-    mtp_ready = True  # Set MTP ready for start. Set False if it is not available later
+    zip_files_interval = 1 * 30  # in seconds
+    zip_txt_dir = ROOT / 'zipped_data'  # Where to put zipped text files
+    zip_img_dir = ROOT / 'zipped_images'  # Where to put zipped images
+    zip_log_dir = ROOT / 'zipped_logs'  # Where to put logs
 
     # Load model
     device = select_device(device)
@@ -81,8 +81,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Dataloader
     view_img = check_imshow() if view_img else False
     cudnn.benchmark = True  # set True to speed up constant image size inference
-    dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)
-    # dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
+    # dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)
+    dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
     bs = len(dataset)  # batch_size
 
     # Focal length calibration.
@@ -98,13 +98,18 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     utc_prev_time = datetime.now(timezone.utc)
     zip_timer = datetime.now()
 
+    # If it will zip files, it generates temp and final paths for txt, images and log files.
     if zip_files:
-        txt_zip_dir = Path(project) / name / 'tmp_txt_zips'
-        txt_zip_dir.mkdir(parents=True, exist_ok=True)
+        tmp_txt_dir = Path(project) / name / 'tmp_txt_zips'  # temp txt path
+        tmp_log_dir = Path(project) / name / 'tmp_log_zips'  # temp logs path
+        # Create temp and final directories
+        tmp_txt_dir.mkdir(parents=True, exist_ok=True)
+        tmp_log_dir.mkdir(parents=True, exist_ok=True)
         zip_txt_dir.mkdir(parents=True, exist_ok=True)
+        zip_log_dir.mkdir(parents=True, exist_ok=True)
         if save_img:
-            img_zip_dir = Path(project) / name / 'tmp_img_zips'
-            img_zip_dir.mkdir(parents=True, exist_ok=True)
+            tmp_img_dir = Path(project) / name / 'tmp_img_zips'
+            tmp_img_dir.mkdir(parents=True, exist_ok=True)
             zip_img_dir.mkdir(parents=True, exist_ok=True)
 
     for path, im, im0s, vid_cap, s in dataset:
@@ -116,18 +121,29 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         # Check if it needs to create new folder after a specific time period.
         zip_timer_diff = (datetime.now() - zip_timer).total_seconds()
 
-        # Generate directory
+        # Generate directory according to zip time interval, it generates new directory with date name
         if (not nosave) and ((zip_timer_diff >= zip_files_interval) or first_run):
             save_dir, dir_name = path_with_date(Path(project) / name, utc_time)  # output with date
             txt_dir = save_dir.joinpath('txt')
             img_dir = save_dir.joinpath('images')
+            log_dir = save_dir.joinpath('logs')
 
             # Make dirs
             (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)
             txt_dir.mkdir(parents=True, exist_ok=True)
+            log_dir.mkdir(parents=True, exist_ok=True)
             if save_img:
                 img_dir.mkdir(parents=True, exist_ok=True)
 
+            # Save logs to specified path
+            log_file_handler = logging.FileHandler(str(log_dir / dir_name) + ".log", mode='a')
+            # log_file_handler = handlers.TimedRotatingFileHandler('logs/test.log', when='m', interval=1)
+            log_file_handler.setLevel(logging.INFO)
+            log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
+            log_file_handler.setFormatter(log_formatter)
+            LOGGER.addHandler(log_file_handler)
+
+            # If it runs fir the first time, it generates all paths, then, it sets to false
             if not first_run:
                 new_dir_created = True
             else:
@@ -135,6 +151,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 old_save_dir = deepcopy(save_dir)
                 old_txt_dir = deepcopy(txt_dir)
                 old_img_dir = deepcopy(img_dir)
+                old_log_dir = deepcopy(log_dir)
                 old_dir_name = deepcopy(dir_name)
 
         im = torch.from_numpy(im).to(device)
@@ -156,8 +173,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         dt[2] += time_sync() - t3
 
         # Calculate fps.
-        fps = 1 / (t4 - t1)
-        print(f"FPS: {fps}")
+        fps = int(1 / (t4 - t1))
 
         # Process predictions
         for i, det in enumerate(pred):  # per image
@@ -233,19 +249,21 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 cv2.imwrite(img_path_name, im0, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 utc_prev_time = utc_time
 
-        # Check if there is a MTP connection with display board.
-        if check_mtp:
-            if not any(fname.startswith('mtp') for fname in os.listdir('/run/user/1000/gvfs')):
-                mtp_ready = False
-
-        if zip_files and new_dir_created and mtp_ready:
-            zip_txt_path = txt_zip_dir / old_dir_name
+        if zip_files and new_dir_created:
+            # Zip and move txt output
+            zip_txt_path = tmp_txt_dir / old_dir_name
             shutil.move(old_txt_dir, zip_txt_path)
             shutil.make_archive(zip_txt_path, 'zip', zip_txt_path)
             shutil.rmtree(zip_txt_path, ignore_errors=True)
             shutil.move(str(zip_txt_path) + ".zip", str(zip_txt_dir / old_dir_name) + ".zip")
+            # Zip and move logs output
+            zip_log_path = tmp_log_dir / old_dir_name
+            shutil.move(old_log_dir, zip_log_path)
+            shutil.make_archive(zip_log_path, 'zip', zip_log_path)
+            shutil.rmtree(zip_log_path, ignore_errors=True)
+            shutil.move(str(zip_log_path) + ".zip", str(zip_log_dir / old_dir_name) + ".zip")
             if save_img:
-                zip_img_path = img_zip_dir / old_dir_name
+                zip_img_path = tmp_img_dir / old_dir_name
                 shutil.move(old_img_dir, zip_img_path)
                 shutil.make_archive(zip_img_path, 'zip', zip_img_path)
                 shutil.rmtree(zip_img_path, ignore_errors=True)
@@ -254,12 +272,13 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             old_dir_name = dir_name
             old_save_dir = save_dir
             old_txt_dir = txt_dir
+            old_log_dir = log_dir
             old_img_dir = img_dir
             new_dir_created = False
             zip_timer = datetime.now()
 
         # Print time (inference-only)
-        LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
+        LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
 
     # Print results
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
@@ -273,7 +292,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=YOLO_ROOT / 'yolov5n.pt', help='model path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default=YOLO_ROOT / 'yolov5s.pt', help='model path(s)')
     parser.add_argument('--source', type=str, default=ROOT / 'streams.txt', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--data', type=str, default=YOLO_ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
