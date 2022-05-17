@@ -1,0 +1,13 @@
+# Put in path "/etc/systemd/system/firefly-object-detection.service"
+
+[Unit]
+Description=Firefly Object Detection Service
+After=multi-user.target
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/home/ff/.virtualenvs/yolov5/bin/python /home/ff/Desktop/jetson-object-detection/jetson_run.py
+
+[Install]
+WantedBy=multi-user.target
