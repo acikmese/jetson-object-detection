@@ -292,7 +292,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=YOLO_ROOT / 'yolov5s.pt', help='model path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'prod_model/model.engine', help='model path(s)')
     parser.add_argument('--source', type=str, default=ROOT / 'streams.txt', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--data', type=str, default=YOLO_ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')

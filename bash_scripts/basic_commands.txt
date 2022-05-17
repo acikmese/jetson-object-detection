@@ -5,4 +5,12 @@ workon yolov5
 sudo systemctl restart nvargus-daemon
 
 # Framework service path
-/etc/systemd/system/firefly_object_detection.service
+/etc/systemd/system/firefly-object-detection.service
+
+# Service commands
+sudo systemctl start firefly-object-detection.service
+sudo systemctl stop firefly-object-detection.service
+sudo systemctl restart firefly-object-detection.service
+
+# Check if there is a firefly service running
+systemctl list-units -a | grep firefly
