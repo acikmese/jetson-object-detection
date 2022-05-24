@@ -3,7 +3,7 @@
 echo "Updating Repo!"
 
 # Pull new repo from display to jetson
-adb pull /storage/emulated/0/fireplay/camera-project/repo/jetson-object-detection.zip /home/ff/tmp_repo_dir/
+adb pull /storage/emulated/0/fireplay/camera/source/jetson-object-detection.zip /home/ff/tmp_repo_dir/
 REPO=/home/ff/tmp_repo_dir/jetson-object-detection.zip
 
 # Check if there is new repo file
@@ -36,7 +36,7 @@ if [ -f "$REPO" ]; then
     echo "Object detection service is started!"
 
     # Remove repo file from display.
-    adb shell rm /storage/emulated/0/fireplay/camera-project/repo/jetson-object-detection.zip
+    adb shell rm /storage/emulated/0/fireplay/camera/source/jetson-object-detection.zip
     echo "Old repo file is deleted from display!"
 fi
 
