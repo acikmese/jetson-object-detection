@@ -2,12 +2,22 @@
 
 echo "Updating Repo!"
 
-# Pull new repo from display to jetson
-adb pull /storage/emulated/0/fireplay/camera/source/jetson-object-detection.zip /home/ff/tmp_repo_dir/
-REPO=/home/ff/tmp_repo_dir/jetson-object-detection.zip
+DISPLAY_FILE_PATH=$(adb shell ls /storage/emulated/0/fireplay/camera/source/*.zip | head -1)
+DISPLAY_FILE="$(basename -- $DISPLAY_FILE_PATH)"
+LOCAL_FILE_PATH=$(ls /home/ff/tmp_repo_dir/*.zip | head -1)
+LOCAL_FILE="$(basename -- $LOCAL_FILE_PATH)"
 
-# Check if there is new repo file
-if [ -f "$REPO" ]; then
+if [ "$LOCAL_FILE" = "$DISPLAY_FILE" ]; then
+    echo "No need to update source repo!"
+else
+    echo "New source file found, updating source repo!"
+    NEW_LOCAL_PATH="/home/ff/tmp_repo_dir/"$DISPLAY_FILE""
+
+    echo "Removing old local file."
+    rm -rf $LOCAL_FILE_PATH
+
+    echo "Pull new repo!"
+    adb pull $DISPLAY_FILE_PATH /home/ff/tmp_repo_dir/
     echo "New repo pulled, changing files!"
 
     # Stop object detection service
@@ -15,17 +25,16 @@ if [ -f "$REPO" ]; then
     echo "Object detection service is stopped!"
 
     # Unzip to directory
-    unzip /home/ff/tmp_repo_dir/jetson-object-detection.zip -d /home/ff/tmp_repo_dir/
+    unzip $NEW_LOCAL_PATH -d /home/ff/tmp_repo_dir/
     echo "Files are unzipped!"
 
     # Copy new repo content to current object detection framework path
     rsync -az /home/ff/tmp_repo_dir/jetson-object-detection/ /home/ff/jetson-object-detection/
     echo "Repo files are changed!"
 
-    # Remove old files
+    # Remove old directory
     rm -rf /home/ff/tmp_repo_dir/jetson-object-detection
-    rm -rf /home/ff/tmp_repo_dir/jetson-object-detection.zip
-    echo "Old files are removed!"
+    echo "Old directory is removed!"
 
     # Restart camera service
     echo 1324 | sudo -S systemctl restart nvargus-daemon
@@ -34,10 +43,6 @@ if [ -f "$REPO" ]; then
     # Start object detection service
     echo 1324 | sudo -S systemctl start firefly-object-detection.service
     echo "Object detection service is started!"
-
-    # Remove repo file from display.
-    adb shell rm /storage/emulated/0/fireplay/camera/source/jetson-object-detection.zip
-    echo "Old repo file is deleted from display!"
 fi
 
 exit 0
