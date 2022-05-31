@@ -175,12 +175,16 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         # Calculate fps.
         fps = int(1 / (t4 - t1))
 
+        # Camera counter to save all camera images.
+        camera_counter = 0
+
         # Process predictions
         for i, det in enumerate(pred):  # per image
             seen += 1
+            camera_counter += 1
 
             p, im0, frame = path[i], im0s[i].copy(), dataset.count
-            s += f'{i}: '
+            s += f'{str(p)}: '
 
             # Update focal length according to resolution.
             if focal is None:
@@ -191,7 +195,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                     focal = focal_length
 
             p = Path(p)  # to Path
-            s += '%gx%g ' % im.shape[2:]  # print string
+            # s += '%gx%g ' % im.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
             if len(det):
@@ -242,12 +246,28 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)  # 1 millisecond
 
-            if save_img and (utc_time - utc_prev_time).total_seconds() >= img_save_interval:
+            # Check time difference to save image.
+            if (utc_time - utc_prev_time).total_seconds() >= img_save_interval:
+                save_now = True
+            else:
+                save_now = False
+
+            # Time won't pass for second camera, so we need to
+            if camera_counter != 0:
+                save_now = True
+
+            if save_img and save_now:
                 it = utc_time
                 f_name = f"{p.stem}_{it.year}_{it.month}_{it.day}_{it.hour}_{it.minute}_{it.second}"
                 img_path_name = str(img_dir) + '/' + f_name + '.jpg'
                 cv2.imwrite(img_path_name, im0, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 utc_prev_time = utc_time
+
+        # Reset camera counter.
+        camera_counter = 0
+
+        # Print time (inference-only)
+        LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
 
         if zip_files and new_dir_created:
             # Zip and move txt output
@@ -277,8 +297,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             new_dir_created = False
             zip_timer = datetime.now()
 
-        # Print time (inference-only)
-        LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
 
     # Print results
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
