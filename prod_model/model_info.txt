@@ -1,2 +1,2 @@
 # Selected model
-yolov5n_640_bs2.engine
+yolov5s_640_bs2.engine
