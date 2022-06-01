@@ -2,12 +2,12 @@
 
 echo "Updating Repo!"
 
-DISPLAY_FILE_PATH=$(adb shell ls /storage/emulated/0/fireplay/camera/source/*.zip | head -1)
+DISPLAY_FILE_PATH=$(adb shell ls /storage/emulated/0/fireplay/camera/source/source*.zip | head -1)
 DISPLAY_FILE="$(basename -- $DISPLAY_FILE_PATH)"
-LOCAL_FILE_PATH=$(ls /home/ff/tmp_repo_dir/*.zip | head -1)
+LOCAL_FILE_PATH=$(ls /home/ff/tmp_repo_dir/source*.zip | head -1)
 LOCAL_FILE="$(basename -- $LOCAL_FILE_PATH)"
 
-if [ "$LOCAL_FILE" = "$DISPLAY_FILE" ]; then
+if [ -z "$DISPLAY_FILE_PATH" ] || [ "$LOCAL_FILE" = "$DISPLAY_FILE" ]; then
     echo "No need to update source repo!"
 else
     echo "New source file found, updating source repo!"
