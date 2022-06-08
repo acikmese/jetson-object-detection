@@ -11,6 +11,7 @@ from copy import deepcopy
 import torch
 import torch.backends.cudnn as cudnn
 
+# Set framework path
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
 YOLO_ROOT = os.path.join(ROOT, "yolov5")  # Update ROOT path because of submodule.
@@ -65,9 +66,9 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # SET PARAMETERS
     save_img = True  # Save images in given interval
     annotate_img = True  # Save annotated images or raw images
-    img_save_interval = 60  # in seconds
+    img_save_interval = 60 * 3  # in seconds
     zip_files = True  # Zip files and transfer to given path
-    zip_files_interval = 5 * 60  # in seconds
+    zip_files_interval = 60 * 5 # in seconds
     zip_txt_dir = ROOT / 'zipped_data'  # Where to put zipped text files
     zip_img_dir = ROOT / 'zipped_images'  # Where to put zipped images
     zip_log_dir = ROOT / 'zipped_logs'  # Where to put logs
@@ -198,6 +199,9 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             # s += '%gx%g ' % im.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+            # Checks if there is a person in image. System won't save image if there is no person in image.
+            person_detected = False
+
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
@@ -239,6 +243,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                     with open(prod_text_path, 'a') as f:
                         txt = ','.join(map(str, line))
                         f.write(txt + '\n')
+                    if c == 0:  # If a person (class:0) is detected, let system know there is person in image to save.
+                        person_detected = True
 
             # Stream results
             im0 = annotator.result()
@@ -256,7 +262,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             if camera_counter != 0:
                 save_now = True
 
-            if save_img and save_now:
+            if save_img and save_now and person_detected:
                 it = utc_time
                 f_name = f"{p.stem}_{it.year}_{it.month}_{it.day}_{it.hour}_{it.minute}_{it.second}"
                 img_path_name = str(img_dir) + '/' + f_name + '.jpg'
