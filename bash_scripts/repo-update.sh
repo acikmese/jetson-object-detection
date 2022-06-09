@@ -44,5 +44,3 @@ else
     echo 1324 | sudo -S systemctl start firefly-object-detection.service
     echo "Object detection service is started!"
 fi
-
-exit 0
