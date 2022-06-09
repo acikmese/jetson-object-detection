@@ -11,5 +11,3 @@ ls *.zip -t | sed -e '1,100d' | xargs -d '\n' rm
 # Remove old zipped logs.
 cd /home/ff/jetson-object-detection/zipped_logs/
 ls *.zip -t | sed -e '1,500d' | xargs -d '\n' rm
-
-exit 0
