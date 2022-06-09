@@ -15,3 +15,5 @@ echo "Service check is done!"
 # 4. Remove old files if necessary.
 echo 1324 | sudo -S bash /home/ff/jetson-object-detection/bash_scripts/remove-old-files.sh
 echo "Old files are removed!"
+
+exit 0
