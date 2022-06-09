@@ -68,7 +68,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     annotate_img = True  # Save annotated images or raw images
     img_save_interval = 60 * 3  # in seconds
     zip_files = True  # Zip files and transfer to given path
-    zip_files_interval = 60 * 5 # in seconds
+    zip_files_interval = 60  # in seconds
     zip_txt_dir = ROOT / 'zipped_data'  # Where to put zipped text files
     zip_img_dir = ROOT / 'zipped_images'  # Where to put zipped images
     zip_log_dir = ROOT / 'zipped_logs'  # Where to put logs
@@ -302,7 +302,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             old_img_dir = img_dir
             new_dir_created = False
             zip_timer = datetime.now()
-
 
     # Print results
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
