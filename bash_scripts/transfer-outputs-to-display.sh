@@ -14,5 +14,3 @@ sudo rm -rf /home/ff/jetson-object-detection/zipped_logs/*.zip
 echo "Transferring images!"
 adb push /home/ff/jetson-object-detection/zipped_images/*.zip /storage/emulated/0/fireplay/camera/picture
 sudo rm -rf /home/ff/jetson-object-detection/zipped_images/*.zip
-
-exit 0
