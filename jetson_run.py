@@ -68,7 +68,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     annotate_img = True  # Save annotated images or raw images
     img_save_interval = 60 * 3  # in seconds
     zip_files = True  # Zip files and transfer to given path
-    zip_files_interval = 60 * 5 # in seconds
+    zip_files_interval = 60 * 5  # in seconds
     zip_txt_dir = ROOT / 'zipped_data'  # Where to put zipped text files
     zip_img_dir = ROOT / 'zipped_images'  # Where to put zipped images
     zip_log_dir = ROOT / 'zipped_logs'  # Where to put logs
@@ -82,8 +82,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Dataloader
     view_img = check_imshow() if view_img else False
     cudnn.benchmark = True  # set True to speed up constant image size inference
-    dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)
-    # dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
+    # dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)
+    dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
     bs = len(dataset)  # batch_size
 
     # Focal length calibration.
@@ -98,6 +98,14 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     utc_prev_time = datetime.now(timezone.utc)
     zip_timer = datetime.now()
+
+    txt_dir = Path(project) / name / 'txt'  # txt output dir
+    log_dir = Path(project) / name / 'logs'  # log output dir
+    txt_dir.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    if save_img:
+        img_dir = Path(project) / name / 'images'  # image output dir
+        img_dir.mkdir(parents=True, exist_ok=True)
 
     # If it will zip files, it generates temp and final paths for txt, images and log files.
     if zip_files:
@@ -125,16 +133,16 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         # Generate directory according to zip time interval, it generates new directory with date name
         if (not nosave) and ((zip_timer_diff >= zip_files_interval) or first_run):
             save_dir, dir_name = path_with_date(Path(project) / name, utc_time)  # output with date
-            txt_dir = save_dir.joinpath('txt')
-            img_dir = save_dir.joinpath('images')
-            log_dir = save_dir.joinpath('logs')
-
-            # Make dirs
-            (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)
-            txt_dir.mkdir(parents=True, exist_ok=True)
-            log_dir.mkdir(parents=True, exist_ok=True)
-            if save_img:
-                img_dir.mkdir(parents=True, exist_ok=True)
+            # txt_dir = save_dir.joinpath('txt')
+            # img_dir = save_dir.joinpath('images')
+            # log_dir = save_dir.joinpath('logs')
+            #
+            # # Make dirs
+            # (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)
+            # txt_dir.mkdir(parents=True, exist_ok=True)
+            # log_dir.mkdir(parents=True, exist_ok=True)
+            # if save_img:
+            #     img_dir.mkdir(parents=True, exist_ok=True)
 
             # Save logs to specified path
             log_file_handler = logging.FileHandler(str(log_dir / dir_name) + ".log", mode='a')
@@ -149,11 +157,11 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 new_dir_created = True
             else:
                 first_run = False
-                old_save_dir = deepcopy(save_dir)
-                old_txt_dir = deepcopy(txt_dir)
-                old_img_dir = deepcopy(img_dir)
-                old_log_dir = deepcopy(log_dir)
-                old_dir_name = deepcopy(dir_name)
+                # old_save_dir = deepcopy(save_dir)
+                # old_txt_dir = deepcopy(txt_dir)
+                # old_img_dir = deepcopy(img_dir)
+                # old_log_dir = deepcopy(log_dir)
+                # old_dir_name = deepcopy(dir_name)
 
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
