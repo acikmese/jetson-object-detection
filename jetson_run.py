@@ -2,11 +2,9 @@ import cv2
 import argparse
 import os
 import sys
-import shutil
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
-from copy import deepcopy
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -26,7 +24,7 @@ from yolov5.utils.general import (LOGGER, check_img_size, check_imshow, colorstr
 from yolov5.utils.plots import Annotator, colors
 from yolov5.utils.torch_utils import select_device, time_sync
 from streamers import LoadCSI, LoadWebcam
-from extra_utils import path_with_date, calculate_distance
+from extra_utils import calculate_distance, zip_with_datetime
 
 # THESE MAY NOT NEEDED!
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -66,9 +64,9 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # SET PARAMETERS
     save_img = True  # Save images in given interval
     annotate_img = True  # Save annotated images or raw images
-    img_save_interval = 60 * 3  # in seconds
+    img_save_interval = 10  # in seconds
     zip_files = True  # Zip files and transfer to given path
-    zip_files_interval = 60 * 5  # in seconds
+    zip_files_interval = 20  # in seconds
     zip_txt_dir = ROOT / 'zipped_data'  # Where to put zipped text files
     zip_img_dir = ROOT / 'zipped_images'  # Where to put zipped images
     zip_log_dir = ROOT / 'zipped_logs'  # Where to put logs
@@ -127,41 +125,16 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         utc_time = datetime.now(timezone.utc)
         utc_iso = utc_time.isoformat()
 
-        # Check if it needs to create new folder after a specific time period.
-        zip_timer_diff = (datetime.now() - zip_timer).total_seconds()
-
         # Generate directory according to zip time interval, it generates new directory with date name
-        if (not nosave) and ((zip_timer_diff >= zip_files_interval) or first_run):
-            save_dir, dir_name = path_with_date(Path(project) / name, utc_time)  # output with date
-            # txt_dir = save_dir.joinpath('txt')
-            # img_dir = save_dir.joinpath('images')
-            # log_dir = save_dir.joinpath('logs')
-            #
-            # # Make dirs
-            # (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)
-            # txt_dir.mkdir(parents=True, exist_ok=True)
-            # log_dir.mkdir(parents=True, exist_ok=True)
-            # if save_img:
-            #     img_dir.mkdir(parents=True, exist_ok=True)
-
+        if (not nosave) and first_run:
+            # save_dir, dir_name = path_with_date(Path(project) / name, utc_time)  # output with date
             # Save logs to specified path
-            log_file_handler = logging.FileHandler(str(log_dir / dir_name) + ".log", mode='a')
+            log_file_handler = logging.FileHandler(str(log_dir / "logs") + ".log", mode='a')
             # log_file_handler = handlers.TimedRotatingFileHandler('logs/test.log', when='m', interval=1)
             log_file_handler.setLevel(logging.INFO)
             log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
             log_file_handler.setFormatter(log_formatter)
             LOGGER.addHandler(log_file_handler)
-
-            # If it runs fir the first time, it generates all paths, then, it sets to false
-            if not first_run:
-                new_dir_created = True
-            else:
-                first_run = False
-                # old_save_dir = deepcopy(save_dir)
-                # old_txt_dir = deepcopy(txt_dir)
-                # old_img_dir = deepcopy(img_dir)
-                # old_log_dir = deepcopy(log_dir)
-                # old_dir_name = deepcopy(dir_name)
 
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -283,32 +256,17 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         # Print time (inference-only)
         LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
 
-        if zip_files and new_dir_created:
+        # Check if it needs to create new folder after a specific time period.
+        zip_timer_diff = (datetime.now() - zip_timer).total_seconds()
+
+        if zip_files and (zip_timer_diff >= zip_files_interval):
             # Zip and move txt output
-            zip_txt_path = tmp_txt_dir / old_dir_name
-            shutil.move(old_txt_dir, zip_txt_path)
-            shutil.make_archive(zip_txt_path, 'zip', zip_txt_path)
-            shutil.rmtree(zip_txt_path, ignore_errors=True)
-            shutil.move(str(zip_txt_path) + ".zip", str(zip_txt_dir / old_dir_name) + ".zip")
+            zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)
             # Zip and move logs output
-            zip_log_path = tmp_log_dir / old_dir_name
-            shutil.move(old_log_dir, zip_log_path)
-            shutil.make_archive(zip_log_path, 'zip', zip_log_path)
-            shutil.rmtree(zip_log_path, ignore_errors=True)
-            shutil.move(str(zip_log_path) + ".zip", str(zip_log_dir / old_dir_name) + ".zip")
+            zip_with_datetime(log_dir, tmp_log_dir, zip_log_dir, utc_time)
+            # Zip and move image output
             if save_img:
-                zip_img_path = tmp_img_dir / old_dir_name
-                shutil.move(old_img_dir, zip_img_path)
-                shutil.make_archive(zip_img_path, 'zip', zip_img_path)
-                shutil.rmtree(zip_img_path, ignore_errors=True)
-                shutil.move(str(zip_img_path) + ".zip", str(zip_img_dir / old_dir_name) + ".zip")
-            shutil.rmtree(old_save_dir, ignore_errors=True)
-            old_dir_name = dir_name
-            old_save_dir = save_dir
-            old_txt_dir = txt_dir
-            old_log_dir = log_dir
-            old_img_dir = img_dir
-            new_dir_created = False
+                zip_with_datetime(img_dir, tmp_img_dir, zip_img_dir, utc_time)
             zip_timer = datetime.now()
 
     # Print results
