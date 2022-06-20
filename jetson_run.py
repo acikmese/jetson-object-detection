@@ -261,12 +261,15 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
         if zip_files and (zip_timer_diff >= zip_files_interval):
             # Zip and move txt output
-            zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)
+            txt_success, txt_msg = zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)
+            LOGGER.info(f"TXT zip and transfer process: {txt_success}: {txt_msg}")
             # Zip and move logs output
-            zip_with_datetime(log_dir, tmp_log_dir, zip_log_dir, utc_time)
+            log_success, log_msg = zip_with_datetime(log_dir, tmp_log_dir, zip_log_dir, utc_time)
+            LOGGER.info(f"LOG zip and transfer process: {log_success}: {log_msg}")
             # Zip and move image output
             if save_img:
-                zip_with_datetime(img_dir, tmp_img_dir, zip_img_dir, utc_time)
+                img_success, img_msg = zip_with_datetime(img_dir, tmp_img_dir, zip_img_dir, utc_time)
+                LOGGER.info(f"IMAGE zip and transfer process: {img_success}: {img_msg}")
             zip_timer = datetime.now()
 
     # Print results
