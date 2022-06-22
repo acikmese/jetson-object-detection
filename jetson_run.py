@@ -19,7 +19,7 @@ YOLO_ROOT = Path(os.path.relpath(YOLO_ROOT, Path.cwd()))  # relative
 
 from yolov5.models.common import DetectMultiBackend
 from yolov5.utils.general import (LOGGER, check_img_size, check_imshow, colorstr,
-                                  increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer,
+                                  non_max_suppression, print_args, scale_coords, strip_optimizer,
                                   xyxy2xywh)
 from yolov5.utils.plots import Annotator, colors
 from yolov5.utils.torch_utils import select_device, time_sync
@@ -45,10 +45,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         max_det=1000,  # maximum detections per image
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         view_img=False,  # show results
-        save_txt=False,  # save results to *.txt
         nosave=False,  # do not save images/videos
         classes=None,  # filter by class: --class 0, or --class 0 2 3
-        update=False,  # update all models
         project=ROOT / 'output',  # save results to project/name
         name='dets',  # save results to project/name
         line_thickness=2,  # bounding box thickness (pixels)
@@ -56,20 +54,24 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         hide_conf=False,  # hide confidences
         half=True,  # use FP16 half-precision inference
         focal_length=1000,  # focal length of camera in pixels
-        add_distance=False,  # add distance information for some classes
+        add_distance=True,  # add distance information for some classes
         avg_height=1.75,  # average height of human being (for distance calculation)
+        save_img=True,  # Save images in given interval
+        img_save_interval=10,  # in seconds
+        annotate_img=True,  # Save annotated images or raw images
+        zip_files=True,  # Zip files and transfer to given path
+        zip_files_interval=20,  # in seconds
+        zip_txt_name='zipped_data',  # name of directory to save zipped txt output
+        zip_log_name='zipped_logs',  # name of directory to save zipped log data
+        zip_img_name='zipped_images',  # name of directory to save zipped images
         ):
-    source = str(source)  # Set source
+    # Set sources
+    source = str(source)
 
-    # SET PARAMETERS
-    save_img = True  # Save images in given interval
-    annotate_img = True  # Save annotated images or raw images
-    img_save_interval = 10  # in seconds
-    zip_files = True  # Zip files and transfer to given path
-    zip_files_interval = 20  # in seconds
-    zip_txt_dir = ROOT / 'zipped_data'  # Where to put zipped text files
-    zip_img_dir = ROOT / 'zipped_images'  # Where to put zipped images
-    zip_log_dir = ROOT / 'zipped_logs'  # Where to put logs
+    # Set directories to send zipped data
+    zip_txt_dir = ROOT / zip_txt_name  # Where to put zipped text files
+    zip_img_dir = ROOT / zip_log_name  # Where to put zipped images
+    zip_log_dir = ROOT / zip_img_name  # Where to put logs
 
     # Load model
     device = select_device(device)
@@ -195,10 +197,10 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
                     d = 0  # Set distance as zero for default.
-
-                    # Distance
-                    obj_height = xyxy[3] - xyxy[1]  # Calculate length of height of bounding box of detected object
-                    d = calculate_distance(obj_height, focal, avg_height, cls)
+                    if add_distance:
+                        # Distance
+                        obj_height = xyxy[3] - xyxy[1]  # Calculate length of height of bounding box of detected object
+                        d = calculate_distance(obj_height, focal, avg_height, cls)
 
                     if view_img or annotate_img:  # Add bbox to image
                         c = int(cls)  # integer class
@@ -275,11 +277,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Print results
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
     LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
-    if save_txt or save_img:
-        s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-        LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
-    if update:
-        strip_optimizer(weights)  # update model (to fix SourceChangeWarning)
 
 
 def parse_opt():
