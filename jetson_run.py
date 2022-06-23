@@ -87,8 +87,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     bs = len(dataset)  # batch_size
 
     # Focal length calibration.
-    # focal = dict.fromkeys(dataset.sources, None)
-    focal = None
+    # focal = None
 
     # Run inference
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
@@ -97,9 +96,15 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     first_run = True  # if first run, create log files.
     current_time = datetime.now(timezone.utc)
     utc_prev_time = dict()
-    for s in dataset.sources:
-        utc_prev_time[Path(s).stem] = current_time
-    zip_timer = datetime.now()
+    focal = dict()
+    for i, s in enumerate(dataset.sources):
+        source_name = Path(s).stem
+        utc_prev_time[source_name] = current_time
+        if dataset.imgs[i].shape[0] != 1080:
+            focal[source_name] = focal_length * (img_height / 1080)
+        else:
+            focal[source_name] = focal_length
+    zip_timer = time_sync()
 
     txt_dir = Path(project) / name / 'txt'  # txt output dir
     log_dir = Path(project) / name / 'logs'  # log output dir
@@ -168,13 +173,13 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             p, im0, frame = path[i], im0s[i].copy(), dataset.count
             s += f'{str(p)}: '
 
-            # Update focal length according to resolution.
-            if focal is None:
-                img_height = im0.shape[0]
-                if img_height != 1080:
-                    focal = focal_length * (img_height / 1080)
-                else:
-                    focal = focal_length
+            # # Update focal length according to resolution.
+            # if focal is None:
+            #     img_height = im0.shape[0]
+            #     if img_height != 1080:
+            #         focal = focal_length * (img_height / 1080)
+            #     else:
+            #         focal = focal_length
 
             p = Path(p)  # to Path
             # s += '%gx%g ' % im.shape[2:]  # print string
@@ -198,7 +203,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                     if add_distance:
                         # Distance
                         obj_height = xyxy[3] - xyxy[1]  # Calculate length of height of bounding box of detected object
-                        d = calculate_distance(obj_height, focal, avg_height, cls)
+                        d = calculate_distance(obj_height, focal[p.stem], avg_height, cls)
 
                     if view_img or annotate_img:  # Add bbox to image
                         c = int(cls)  # integer class
@@ -250,7 +255,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
 
         # Check if time passed to zip files
-        if zip_files and ((datetime.now() - zip_timer).total_seconds() >= zip_files_interval):
+        if zip_files and (time_sync() - zip_timer >= zip_files_interval):
             # Zip and move txt output
             txt_success, txt_msg = zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)
             LOGGER.info(f"TXT zip and transfer process: {txt_success}: {txt_msg}")
@@ -261,7 +266,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             if save_img:
                 img_success, img_msg = zip_with_datetime(img_dir, tmp_img_dir, zip_img_dir, utc_time)
                 LOGGER.info(f"IMAGE zip and transfer process: {img_success}: {img_msg}")
-            zip_timer = datetime.now()
+            zip_timer = time_sync()
 
     # Print results
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
