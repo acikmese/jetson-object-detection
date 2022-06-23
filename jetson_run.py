@@ -57,10 +57,10 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         add_distance=True,  # add distance information for some classes
         avg_height=1.75,  # average height of human being (for distance calculation)
         save_img=True,  # Save images in given interval
-        img_save_interval=10,  # in seconds
+        img_save_interval=30,  # in seconds
         annotate_img=True,  # Save annotated images or raw images
         zip_files=True,  # Zip files and transfer to given path
-        zip_files_interval=20,  # in seconds
+        zip_files_interval=180,  # in seconds
         zip_txt_name='zipped_data',  # name of directory to save zipped txt output
         zip_log_name='zipped_logs',  # name of directory to save zipped log data
         zip_img_name='zipped_images',  # name of directory to save zipped images
@@ -87,16 +87,18 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     bs = len(dataset)  # batch_size
 
     # Focal length calibration.
+    # focal = dict.fromkeys(dataset.sources, None)
     focal = None
 
     # Run inference
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     dt, seen = [0.0, 0.0, 0.0], 0
 
-    first_run = True  # if first run, create directories for output
-    new_dir_created = False  # if new directory created, it will zip folder and move to output path
-
-    utc_prev_time = datetime.now(timezone.utc)
+    first_run = True  # if first run, create log files.
+    current_time = datetime.now(timezone.utc)
+    utc_prev_time = dict()
+    for s in dataset.sources:
+        utc_prev_time[Path(s).stem] = current_time
     zip_timer = datetime.now()
 
     txt_dir = Path(project) / name / 'txt'  # txt output dir
@@ -129,7 +131,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
         # Generate directory according to zip time interval, it generates new directory with date name
         if (not nosave) and first_run:
-            # save_dir, dir_name = path_with_date(Path(project) / name, utc_time)  # output with date
             # Save logs to specified path
             log_file_handler = logging.FileHandler(str(log_dir / "logs") + ".log", mode='a')
             # log_file_handler = handlers.TimedRotatingFileHandler('logs/test.log', when='m', interval=1)
@@ -137,6 +138,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
             log_file_handler.setFormatter(log_formatter)
             LOGGER.addHandler(log_file_handler)
+            first_run = False
 
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -159,13 +161,9 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         # Calculate fps.
         fps = int(1 / (t4 - t1))
 
-        # Camera counter to save all camera images.
-        camera_counter = 0
-
         # Process predictions
         for i, det in enumerate(pred):  # per image
             seen += 1
-            camera_counter += 1
 
             p, im0, frame = path[i], im0s[i].copy(), dataset.count
             s += f'{str(p)}: '
@@ -235,33 +233,24 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)  # 1 millisecond
 
-            # Check time difference to save image.
-            if (utc_time - utc_prev_time).total_seconds() >= img_save_interval:
-                save_now = True
-            else:
-                save_now = False
-
             # Time won't pass for second camera, so we need to
-            if camera_counter != 0:
-                save_now = True
+            # another_camera = True if i > 0 else False
 
-            if save_img and save_now and person_detected:
+            # If it save images and there is a person,
+            # it checks time interval from previous image save.
+            # If it is another camera, it saves because time is already passed for previous camera.
+            if save_img and person_detected and (utc_time - utc_prev_time[p.stem]).total_seconds() >= img_save_interval:
                 it = utc_time
                 f_name = f"{p.stem}_{it.year}_{it.month}_{it.day}_{it.hour}_{it.minute}_{it.second}"
                 img_path_name = str(img_dir) + '/' + f_name + '.jpg'
                 cv2.imwrite(img_path_name, im0, [cv2.IMWRITE_JPEG_QUALITY, 80])
-                utc_prev_time = utc_time
-
-        # Reset camera counter.
-        camera_counter = 0
+                utc_prev_time[p.stem] = utc_time
 
         # Print time (inference-only)
         LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
 
-        # Check if it needs to create new folder after a specific time period.
-        zip_timer_diff = (datetime.now() - zip_timer).total_seconds()
-
-        if zip_files and (zip_timer_diff >= zip_files_interval):
+        # Check if time passed to zip files
+        if zip_files and ((datetime.now() - zip_timer).total_seconds() >= zip_files_interval):
             # Zip and move txt output
             txt_success, txt_msg = zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)
             LOGGER.info(f"TXT zip and transfer process: {txt_success}: {txt_msg}")
