@@ -1,18 +1,22 @@
 #!/bin/bash
 
-# 1. Transfer files to display path.
+# 1. Zip cron log and transfer to zipped logs.
+zip /home/ff/jetson-object-detection/zipped_logs/cron_log_"`date +"%s"`".zip . -i /home/ff/jetson-object-detection$
+truncate -s 0 /home/ff/jetson-object-detection/cron_log/cron_log.log  # empty file
+
+# 2. Transfer files to display path.
 echo 1324 | sudo -S bash /home/ff/jetson-object-detection/bash_scripts/transfer-outputs-to-display.sh
 echo "Transferring files are done!"
 
-# 2. Check repo update and do the update.
+# 3. Check repo update and do the update.
 echo 1324 | sudo -S bash /home/ff/jetson-object-detection/bash_scripts/repo-update.sh
 echo "Repo update is done!"
 
-# 3. Check if service is running, if not, restart.
+# 4. Check if service is running, if not, restart.
 echo 1324 | sudo -S bash /home/ff/jetson-object-detection/bash_scripts/check-running-service.sh
 echo "Service check is done!"
 
-# 4. Remove old files if necessary.
+# 5. Remove old files if necessary.
 echo 1324 | sudo -S bash /home/ff/jetson-object-detection/bash_scripts/remove-old-files.sh
 echo "Old files are removed!"
 
