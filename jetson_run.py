@@ -68,39 +68,39 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Set sources
     source = str(source)
 
+    # Set paths
+    # Set directories to save output
+    txt_dir = Path(project) / name / 'txt'  # txt output dir
+    log_dir = Path(project) / name / 'logs'  # log output dir
+    img_dir = Path(project) / name / 'images'  # image output dir
+    # Set directories to send zipped data
+    zip_txt_dir = ROOT / zip_txt_name  # Where to put zipped text files
+    zip_img_dir = ROOT / zip_log_name  # Where to put zipped images
+    zip_log_dir = ROOT / zip_img_name  # Where to put logs
+    # Set temporary directories
+    tmp_txt_dir = Path(project) / name / 'tmp_txt_zips'  # temp txt path
+    tmp_log_dir = Path(project) / name / 'tmp_log_zips'  # temp logs path
+    tmp_img_dir = Path(project) / name / 'tmp_img_zips'  # temp images path
+
     # Create paths for saving outputs
     if not nosave:
-        # Set directories to save output
-        txt_dir = Path(project) / name / 'txt'  # txt output dir
-        log_dir = Path(project) / name / 'logs'  # log output dir
         txt_dir.mkdir(parents=True, exist_ok=True)
         log_dir.mkdir(parents=True, exist_ok=True)
         if save_img:  # Set image save directory
-            img_dir = Path(project) / name / 'images'  # image output dir
             img_dir.mkdir(parents=True, exist_ok=True)
-
         # If it will zip files, it generates temp and final paths for txt, images and log files.
         if zip_files:
-            # Set directories to send zipped data
-            zip_txt_dir = ROOT / zip_txt_name  # Where to put zipped text files
-            zip_img_dir = ROOT / zip_log_name  # Where to put zipped images
-            zip_log_dir = ROOT / zip_img_name  # Where to put logs
-            # Set temporary directories
-            tmp_txt_dir = Path(project) / name / 'tmp_txt_zips'  # temp txt path
-            tmp_log_dir = Path(project) / name / 'tmp_log_zips'  # temp logs path
             # Create temp and final directories
             tmp_txt_dir.mkdir(parents=True, exist_ok=True)
             tmp_log_dir.mkdir(parents=True, exist_ok=True)
             zip_txt_dir.mkdir(parents=True, exist_ok=True)
             zip_log_dir.mkdir(parents=True, exist_ok=True)
             if save_img:  # Set temp and final zip directories for images
-                tmp_img_dir = Path(project) / name / 'tmp_img_zips'
                 tmp_img_dir.mkdir(parents=True, exist_ok=True)
                 zip_img_dir.mkdir(parents=True, exist_ok=True)
 
         # Save logs to specified path
         log_file_handler = logging.FileHandler(str(log_dir / "logs") + ".log", mode='a')
-        # log_file_handler = handlers.TimedRotatingFileHandler('logs/test.log', when='m', interval=1)
         log_file_handler.setLevel(logging.INFO)
         log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
         log_file_handler.setFormatter(log_formatter)
