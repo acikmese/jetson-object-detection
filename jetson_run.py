@@ -68,10 +68,43 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Set sources
     source = str(source)
 
-    # Set directories to send zipped data
-    zip_txt_dir = ROOT / zip_txt_name  # Where to put zipped text files
-    zip_img_dir = ROOT / zip_log_name  # Where to put zipped images
-    zip_log_dir = ROOT / zip_img_name  # Where to put logs
+    # Create paths for saving outputs
+    if not nosave:
+        # Set directories to save output
+        txt_dir = Path(project) / name / 'txt'  # txt output dir
+        log_dir = Path(project) / name / 'logs'  # log output dir
+        txt_dir.mkdir(parents=True, exist_ok=True)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        if save_img:  # Set image save directory
+            img_dir = Path(project) / name / 'images'  # image output dir
+            img_dir.mkdir(parents=True, exist_ok=True)
+
+        # If it will zip files, it generates temp and final paths for txt, images and log files.
+        if zip_files:
+            # Set directories to send zipped data
+            zip_txt_dir = ROOT / zip_txt_name  # Where to put zipped text files
+            zip_img_dir = ROOT / zip_log_name  # Where to put zipped images
+            zip_log_dir = ROOT / zip_img_name  # Where to put logs
+            # Set temporary directories
+            tmp_txt_dir = Path(project) / name / 'tmp_txt_zips'  # temp txt path
+            tmp_log_dir = Path(project) / name / 'tmp_log_zips'  # temp logs path
+            # Create temp and final directories
+            tmp_txt_dir.mkdir(parents=True, exist_ok=True)
+            tmp_log_dir.mkdir(parents=True, exist_ok=True)
+            zip_txt_dir.mkdir(parents=True, exist_ok=True)
+            zip_log_dir.mkdir(parents=True, exist_ok=True)
+            if save_img:  # Set temp and final zip directories for images
+                tmp_img_dir = Path(project) / name / 'tmp_img_zips'
+                tmp_img_dir.mkdir(parents=True, exist_ok=True)
+                zip_img_dir.mkdir(parents=True, exist_ok=True)
+
+        # Save logs to specified path
+        log_file_handler = logging.FileHandler(str(log_dir / "logs") + ".log", mode='a')
+        # log_file_handler = handlers.TimedRotatingFileHandler('logs/test.log', when='m', interval=1)
+        log_file_handler.setLevel(logging.INFO)
+        log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
+        log_file_handler.setFormatter(log_formatter)
+        LOGGER.addHandler(log_file_handler)
 
     # Load model
     device = select_device(device)
@@ -86,14 +119,10 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
     bs = len(dataset)  # batch_size
 
-    # Focal length calibration.
-    # focal = None
-
     # Run inference
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     dt, seen = [0.0, 0.0, 0.0], 0
 
-    first_run = True  # if first run, create log files.
     current_time = datetime.now(timezone.utc)
     utc_prev_time = dict()
     focal = dict()
@@ -101,49 +130,16 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         source_name = Path(s).stem
         utc_prev_time[source_name] = current_time
         if dataset.imgs[i].shape[0] != 1080:
-            focal[source_name] = focal_length * (img_height / 1080)
+            focal[source_name] = focal_length * (dataset.imgs[i].shape[0] / 1080)
         else:
             focal[source_name] = focal_length
     zip_timer = time_sync()
-
-    txt_dir = Path(project) / name / 'txt'  # txt output dir
-    log_dir = Path(project) / name / 'logs'  # log output dir
-    txt_dir.mkdir(parents=True, exist_ok=True)
-    log_dir.mkdir(parents=True, exist_ok=True)
-    if save_img:
-        img_dir = Path(project) / name / 'images'  # image output dir
-        img_dir.mkdir(parents=True, exist_ok=True)
-
-    # If it will zip files, it generates temp and final paths for txt, images and log files.
-    if zip_files:
-        tmp_txt_dir = Path(project) / name / 'tmp_txt_zips'  # temp txt path
-        tmp_log_dir = Path(project) / name / 'tmp_log_zips'  # temp logs path
-        # Create temp and final directories
-        tmp_txt_dir.mkdir(parents=True, exist_ok=True)
-        tmp_log_dir.mkdir(parents=True, exist_ok=True)
-        zip_txt_dir.mkdir(parents=True, exist_ok=True)
-        zip_log_dir.mkdir(parents=True, exist_ok=True)
-        if save_img:
-            tmp_img_dir = Path(project) / name / 'tmp_img_zips'
-            tmp_img_dir.mkdir(parents=True, exist_ok=True)
-            zip_img_dir.mkdir(parents=True, exist_ok=True)
 
     for path, im, im0s, vid_cap, s in dataset:
         t1 = time_sync()
         # Get datetime of current image.
         utc_time = datetime.now(timezone.utc)
         utc_iso = utc_time.isoformat()
-
-        # Generate directory according to zip time interval, it generates new directory with date name
-        if (not nosave) and first_run:
-            # Save logs to specified path
-            log_file_handler = logging.FileHandler(str(log_dir / "logs") + ".log", mode='a')
-            # log_file_handler = handlers.TimedRotatingFileHandler('logs/test.log', when='m', interval=1)
-            log_file_handler.setLevel(logging.INFO)
-            log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
-            log_file_handler.setFormatter(log_formatter)
-            LOGGER.addHandler(log_file_handler)
-            first_run = False
 
         im = torch.from_numpy(im).to(device)
         im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -172,14 +168,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
             p, im0, frame = path[i], im0s[i].copy(), dataset.count
             s += f'{str(p)}: '
-
-            # # Update focal length according to resolution.
-            # if focal is None:
-            #     img_height = im0.shape[0]
-            #     if img_height != 1080:
-            #         focal = focal_length * (img_height / 1080)
-            #     else:
-            #         focal = focal_length
 
             p = Path(p)  # to Path
             # s += '%gx%g ' % im.shape[2:]  # print string
@@ -237,9 +225,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             if view_img:
                 cv2.imshow(str(p), im0)
                 cv2.waitKey(1)  # 1 millisecond
-
-            # Time won't pass for second camera, so we need to
-            # another_camera = True if i > 0 else False
 
             # If it save images and there is a person,
             # it checks time interval from previous image save.
