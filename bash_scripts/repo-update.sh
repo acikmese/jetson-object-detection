@@ -8,7 +8,7 @@ DISPLAY_FILE_PATH=$(adb shell ls /storage/emulated/0/fireplay/camera/source/sour
 if [ -n "$DISPLAY_FILE_PATH" ]; then
     DISPLAY_FILE="$(basename -- $DISPLAY_FILE_PATH)"
 else
-    DISPLAY_FILE = ""
+    DISPLAY_FILE=""
 fi
 
 # Get file path from local zip repo.
@@ -18,7 +18,7 @@ if [ -n "$LOCAL_FILE_PATH" ]; then
     LOCAL_FILE="$(basename -- $LOCAL_FILE_PATH)"
 else
     mkdir -p /home/ff/tmp_repo_dir
-    LOCAL_FILE = ""
+    LOCAL_FILE=""
 fi
 
 if [ -n "$DISPLAY_FILE_PATH" ] && [ "$LOCAL_FILE" != "$DISPLAY_FILE" ]; then

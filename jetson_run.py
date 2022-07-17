@@ -5,7 +5,6 @@ import sys
 import logging
 from pathlib import Path
 from datetime import datetime, timezone
-
 import torch
 import torch.backends.cudnn as cudnn
 
@@ -18,21 +17,13 @@ if str(YOLO_ROOT) not in sys.path:
 YOLO_ROOT = Path(os.path.relpath(YOLO_ROOT, Path.cwd()))  # relative
 
 from yolov5.models.common import DetectMultiBackend
-from yolov5.utils.general import (LOGGER, check_img_size, check_imshow, colorstr,
-                                  non_max_suppression, print_args, scale_coords, strip_optimizer,
+from yolov5.utils.general import (LOGGER, check_img_size, check_imshow,
+                                  non_max_suppression, print_args, scale_coords,
                                   xyxy2xywh)
 from yolov5.utils.plots import Annotator, colors
 from yolov5.utils.torch_utils import select_device, time_sync
 from streamers import LoadCSI, LoadWebcam
 from extra_utils import calculate_distance, zip_with_datetime
-
-# # THESE MAY NOT NEEDED!
-# os.environ["OMP_NUM_THREADS"] = "1"
-# os.environ["OPENBLAS_NUM_THREADS"] = "1"
-# os.environ["MKL_NUM_THREADS"] = "1"
-# os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
-# os.environ["NUMEXPR_NUM_THREADS"] = "1"
-# os.environ["PYDEVD_WARN_EVALUATION_TIMEOUT"] = "15"
 
 
 @torch.no_grad()
@@ -98,7 +89,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             if save_img:  # Set temp and final zip directories for images
                 tmp_img_dir.mkdir(parents=True, exist_ok=True)
                 zip_img_dir.mkdir(parents=True, exist_ok=True)
-
         # Save logs to specified path
         log_file_handler = logging.FileHandler(str(log_dir / "logs") + ".log", mode='a')
         log_file_handler.setLevel(logging.INFO)
@@ -115,8 +105,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Dataloader
     view_img = check_imshow() if view_img else False
     cudnn.benchmark = True  # set True to speed up constant image size inference
-    dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)
-    # dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)
+    dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)  # to use CSI camera
+    # dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)  # to use Webcam
     bs = len(dataset)  # batch_size
 
     # Run inference
@@ -124,16 +114,18 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     dt, seen = [0.0, 0.0, 0.0], 0
 
     current_time = datetime.now(timezone.utc)
-    utc_prev_time = dict()
-    focal = dict()
+    utc_prev_time = dict()  # collect time for each camera
+    focal = dict()  # collect focal length of each camera
     for i, s in enumerate(dataset.sources):
-        source_name = Path(s).stem
+        source_name = Path(s).stem  # get camera name
         utc_prev_time[source_name] = current_time
+        # Standard focal length of camera is described for 1080p resolution,
+        # but if it has different resolution, focal length should be updated accordingly.
         if dataset.imgs[i].shape[0] != 1080:
             focal[source_name] = focal_length * (dataset.imgs[i].shape[0] / 1080)
         else:
             focal[source_name] = focal_length
-    zip_timer = time_sync()
+    zip_timer = time_sync()  # timer for zipping files
 
     for path, im, im0s, vid_cap, s in dataset:
         t1 = time_sync()
@@ -240,6 +232,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
 
         # Check if time passed to zip files
+        # TODO: check if there are a lot of files in path.
         if zip_files and (time_sync() - zip_timer >= zip_files_interval):
             # Zip and move txt output
             txt_success, txt_msg = zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)

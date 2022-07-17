@@ -17,3 +17,12 @@ systemctl list-units -a | grep firefly
 
 # crontab -e (add following)
 */15 * * * * /home/ff/jetson-object-detection/bash_scripts/jetson-cron-job.sh >> /home/ff/jetson-object-detection/cron_log/cron_log.log 2>&1
+
+# PYTHON
+# These may need to be added to jetson_run.py for faster performance.
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+os.environ["PYDEVD_WARN_EVALUATION_TIMEOUT"] = "15"

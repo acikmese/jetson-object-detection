@@ -3,11 +3,11 @@
 # Found in following link.
 # https://unix.stackexchange.com/a/205539
 
-# Remove old zipped data.
+# Remove old (2 days) zipped data.
 find /home/ff/jetson-object-detection/zipped_data/ -mindepth 1 -type f -mtime +2 -delete
 
-# Remove old zipped images.
+# Remove old (12 hours) zipped images.
 find /home/ff/jetson-object-detection/zipped_images/ -mindepth 1 -type f -mmin +720 -delete
 
-# Remove old zipped logs.
+# Remove old (2 days) zipped logs.
 find /home/ff/jetson-object-detection/zipped_logs/ -mindepth 1 -type f -mtime +2 -delete
