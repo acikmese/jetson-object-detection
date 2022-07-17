@@ -66,8 +66,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     img_dir = Path(project) / name / 'images'  # image output dir
     # Set directories to send zipped data
     zip_txt_dir = ROOT / zip_txt_name  # Where to put zipped text files
-    zip_img_dir = ROOT / zip_log_name  # Where to put zipped images
-    zip_log_dir = ROOT / zip_img_name  # Where to put logs
+    zip_log_dir = ROOT / zip_log_name  # Where to put zipped images
+    zip_img_dir = ROOT / zip_img_name  # Where to put logs
     # Set temporary directories
     tmp_txt_dir = Path(project) / name / 'tmp_txt_zips'  # temp txt path
     tmp_log_dir = Path(project) / name / 'tmp_log_zips'  # temp logs path
@@ -105,8 +105,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Dataloader
     view_img = check_imshow() if view_img else False
     cudnn.benchmark = True  # set True to speed up constant image size inference
-    dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)  # to use CSI camera
-    # dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)  # to use Webcam
+    # dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)  # to use CSI camera
+    dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)  # to use Webcam
     bs = len(dataset)  # batch_size
 
     # Run inference
@@ -126,6 +126,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         else:
             focal[source_name] = focal_length
     zip_timer = time_sync()  # timer for zipping files
+    first_run = True  # Check if it is first run
+    first_run_zip = False  # Check if it needs to zip files in first run
 
     for path, im, im0s, vid_cap, s in dataset:
         t1 = time_sync()
@@ -231,9 +233,14 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         # Print time (inference-only)
         LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
 
+        # If it is first run and there is an output, let system zip files.
+        if not nosave and first_run:
+            if len(os.listdir(txt_dir)) > 0:
+                first_run_zip = True
+            first_run = False
+
         # Check if time passed to zip files
-        # TODO: check if there are a lot of files in path.
-        if zip_files and (time_sync() - zip_timer >= zip_files_interval):
+        if zip_files and (first_run_zip or (time_sync() - zip_timer >= zip_files_interval)):
             # Zip and move txt output
             txt_success, txt_msg = zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)
             LOGGER.info(f"TXT zip and transfer process: {txt_success}: {txt_msg}")
@@ -241,10 +248,11 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             log_success, log_msg = zip_with_datetime(log_dir, tmp_log_dir, zip_log_dir, utc_time)
             LOGGER.info(f"LOG zip and transfer process: {log_success}: {log_msg}")
             # Zip and move image output
-            if save_img:
+            if save_img and len(os.listdir(img_dir)) > 0:  # if there is image output
                 img_success, img_msg = zip_with_datetime(img_dir, tmp_img_dir, zip_img_dir, utc_time)
                 LOGGER.info(f"IMAGE zip and transfer process: {img_success}: {img_msg}")
             zip_timer = time_sync()
+            first_run_zip = False
 
     # Print results
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
