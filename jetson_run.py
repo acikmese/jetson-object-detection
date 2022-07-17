@@ -26,13 +26,13 @@ from yolov5.utils.torch_utils import select_device, time_sync
 from streamers import LoadCSI, LoadWebcam
 from extra_utils import calculate_distance, zip_with_datetime
 
-# THESE MAY NOT NEEDED!
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["PYDEVD_WARN_EVALUATION_TIMEOUT"] = "15"
+# # THESE MAY NOT NEEDED!
+# os.environ["OMP_NUM_THREADS"] = "1"
+# os.environ["OPENBLAS_NUM_THREADS"] = "1"
+# os.environ["MKL_NUM_THREADS"] = "1"
+# os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+# os.environ["NUMEXPR_NUM_THREADS"] = "1"
+# os.environ["PYDEVD_WARN_EVALUATION_TIMEOUT"] = "15"
 
 
 @torch.no_grad()
