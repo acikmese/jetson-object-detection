@@ -105,8 +105,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Dataloader
     view_img = check_imshow() if view_img else False
     cudnn.benchmark = True  # set True to speed up constant image size inference
-    # dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)  # to use CSI camera
-    dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)  # to use Webcam
+    dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)  # to use CSI camera
+    # dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)  # to use Webcam
     bs = len(dataset)  # batch_size
 
     # Run inference
