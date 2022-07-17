@@ -11,5 +11,5 @@ else
     # Restart camera daemon
     echo 1324 | sudo -S systemctl restart nvargus-daemon
     # Restart object detection service
-    echo 1324 | sudo -S systemctl start firefly-object-detection.service
+    echo 1324 | sudo -S systemctl restart firefly-object-detection.service
 fi
