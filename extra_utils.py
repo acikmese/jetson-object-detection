@@ -41,9 +41,9 @@ def calculate_distance(pixel_height, focal_length, average_height, cls):
     else:
         average_height = 0
     if average_height != 0:
-        d = focal_length * average_height / pixel_height
-        d_min = focal_length * min_height / pixel_height
-        d_max = focal_length * max_height / pixel_height
+        d = round(focal_length * average_height / pixel_height, 1)
+        d_min = round(focal_length * min_height / pixel_height, 1)
+        d_max = round(focal_length * max_height / pixel_height, 1)
     else:
         d = 0
         d_min = 0
