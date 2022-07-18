@@ -238,7 +238,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             if len(os.listdir(txt_dir)) > 0:
                 for file in os.listdir(txt_dir):
                     file_name = str(txt_dir / file)
-                    if Path(file_name).stat().st_size >= 1000000:
+                    if Path(file_name).stat().st_size >= 1000000:  # if any file has more than 1MB
                         first_run_zip = True
             first_run = False
 
@@ -247,7 +247,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             # Zip and move txt output
             txt_success, txt_msg = zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)
             LOGGER.info(f"TXT zip and transfer process: {txt_success}: {txt_msg}")
-            # Zip and move logs output
+            # Zip and move log output
             log_success, log_msg = zip_with_datetime(log_dir, tmp_log_dir, zip_log_dir, utc_time)
             LOGGER.info(f"LOG zip and transfer process: {log_success}: {log_msg}")
             # Zip and move image output
@@ -256,10 +256,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 LOGGER.info(f"IMAGE zip and transfer process: {img_success}: {img_msg}")
             zip_timer = time_sync()
             first_run_zip = False
-
-    # Print results
-    t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
-    LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
 
 
 def parse_opt():
