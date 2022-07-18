@@ -236,7 +236,10 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         # If it is first run and there is an output, let system zip files.
         if not nosave and first_run:
             if len(os.listdir(txt_dir)) > 0:
-                first_run_zip = True
+                for file in os.listdir(txt_dir):
+                    file_name = str(txt_dir / file)
+                    if Path(file_name).stat().st_size >= 1000000:
+                        first_run_zip = True
             first_run = False
 
         # Check if time passed to zip files
