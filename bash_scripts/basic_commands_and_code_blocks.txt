@@ -15,6 +15,9 @@ sudo systemctl restart firefly-object-detection.service
 # Check if there is a firefly service running
 systemctl list-units -a | grep firefly
 
+# Send password to sudo command
+echo 1234 | sudo -S bash /home/ff/jetson-object-detection/bash_scripts/transfer-outputs-to-display.sh
+
 # crontab -e (add following)
 */15 * * * * /home/ff/jetson-object-detection/bash_scripts/jetson-cron-job.sh >> /home/ff/jetson-object-detection/cron_log/cron_log.log 2>&1
 

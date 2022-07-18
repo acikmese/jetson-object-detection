@@ -9,7 +9,7 @@ if [ "${STATUS}" = "active" ]; then
 else
     echo " Service not running, restarting...! "
     # Restart camera daemon
-    echo 1324 | sudo -S systemctl restart nvargus-daemon
+    sudo -S systemctl restart nvargus-daemon
     # Restart object detection service
-    echo 1324 | sudo -S systemctl restart firefly-object-detection.service
+    sudo -S systemctl restart firefly-object-detection.service
 fi

@@ -33,8 +33,8 @@ if [ -n "$DISPLAY_FILE_PATH" ] && [ "$LOCAL_FILE" != "$DISPLAY_FILE" ]; then
     echo "New repo pulled, changing files!"
 
     # Stop object detection service
-    echo 1324 | sudo -S systemctl stop firefly-object-detection.service
-    echo 1324 | sudo -S systemctl disable firefly-object-detection.service
+    sudo -S systemctl stop firefly-object-detection.service
+    sudo -S systemctl disable firefly-object-detection.service
     echo "Object detection service is stopped and disabled!"
 
     # Unzip to directory
@@ -50,12 +50,12 @@ if [ -n "$DISPLAY_FILE_PATH" ] && [ "$LOCAL_FILE" != "$DISPLAY_FILE" ]; then
     echo "Old directory is removed!"
 
     # Restart camera service
-    echo 1324 | sudo -S systemctl restart nvargus-daemon
+    sudo -S systemctl restart nvargus-daemon
     echo "nvargus-daemon service is restarted!"
 
     # Start object detection service
-    echo 1324 | sudo -S systemctl enable firefly-object-detection.service
-    echo 1324 | sudo -S systemctl start firefly-object-detection.service
+    sudo -S systemctl enable firefly-object-detection.service
+    sudo -S systemctl start firefly-object-detection.service
     echo "Object detection service is started!"
 else
     echo "No need to update source repo!"
