@@ -29,6 +29,7 @@ from extra_utils import calculate_distance, zip_with_datetime
 @torch.no_grad()
 def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         source=YOLO_ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
+        nocsi=False,  # indicates that CSI camera is not used, USB or URL is used
         data=YOLO_ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
         conf_thres=0.25,  # confidence threshold
@@ -105,8 +106,10 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     # Dataloader
     view_img = check_imshow() if view_img else False
     cudnn.benchmark = True  # set True to speed up constant image size inference
-    dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)  # to use CSI camera
-    # dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)  # to use Webcam
+    if nocsi:  # if we are not using CSI camera. (mostly for development purposes on PC)
+        dataset = LoadWebcam(source, img_size=imgsz, stride=stride, auto=pt)  # to use Webcam or URL
+    else:
+        dataset = LoadCSI(source, img_size=imgsz, stride=stride, auto=pt)  # to use CSI camera
     bs = len(dataset)  # batch_size
 
     # Run inference
@@ -164,7 +167,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             s += f'{str(p)}: '
 
             p = Path(p)  # to Path
-            # s += '%gx%g ' % im.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
             # Checks if there is a person in image. System won't save image if there is no person in image.
@@ -199,7 +201,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                     xywh = xyxy2xywh(torch.tensor(xyxy).view(1, 4)).view(-1).tolist()  # unnormalized xywh
                     c = int(cls)
                     label = names[c]
-                    confidence = float(conf)
+                    confidence = round(float(conf), 2)
                     line = [utc_iso, frame, label, c, confidence, *xywh, *xywh_norm, *d]  # label format
                     prod_text_path = str(txt_dir / p.stem) + ".txt"
                     if not os.path.isfile(prod_text_path) or os.stat(prod_text_path).st_size == 0:
@@ -235,7 +237,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
         # If it is first run and there is an output, let system zip files.
         if not nosave and first_run:
-            if len(os.listdir(txt_dir)) > 0:
+            if len(os.listdir(txt_dir)) > 0:  # if there is a file
                 for file in os.listdir(txt_dir):
                     file_name = str(txt_dir / file)
                     if Path(file_name).stat().st_size >= 1000000:  # if any file has more than 1MB
@@ -260,9 +262,9 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'prod_model/model.engine', help='model path(s)')
-    parser.add_argument('--source', type=str, default=ROOT / 'streams.txt', help='file/dir/URL/glob, 0 for webcam')
-    parser.add_argument('--data', type=str, default=YOLO_ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml')
+    parser.add_argument('--weights', nargs='+', type=str, default=ROOT/'prod_model/model.engine', help='model path(s)')
+    parser.add_argument('--source', type=str, default=ROOT/'streams.txt', help='file/dir/URL/glob, 0 for camera')
+    parser.add_argument('--data', type=str, default=YOLO_ROOT/'data/coco128.yaml', help='(optional) dataset.yaml')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
     parser.add_argument('--conf-thres', type=float, default=0.35, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
@@ -274,6 +276,7 @@ def parse_opt():
     parser.add_argument('--name', default='ff', help='save results to project/name')
     parser.add_argument('--focal-length', default=1000, type=int, help='focal length of camera in pixels')
     parser.add_argument('--avg-height', default=1.75, type=float, help='average height of human in meters')
+    parser.add_argument('--nocsi', action='store_true', help='indicates that CSI camera is not used, USB or URL is used')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(FILE.stem, opt)
