@@ -7,7 +7,7 @@ STATUS="$(systemctl is-active firefly-object-detection.service)"
 if [ "${STATUS}" = "active" ]; then
     echo "$SERVICE is running!"
 else
-    echo " Service not running, restarting...! "
+    echo "Service not running, restarting...!"
     # Restart camera daemon
     sudo -S systemctl restart nvargus-daemon
     # Restart object detection service
