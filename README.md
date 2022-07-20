@@ -9,7 +9,7 @@ Uses TensorRT optimized model for inference (done with export module from yolov5
 
 ```bash
 # Clone repo:  
-git clone https://github.com/acikmese/jetson-object-detection.git  
-# Initialize submodules:  
-git submodule init  
-git submodule update  
+git clone https://github.com/acikmese/jetson-object-detection.git
+# Initialize submodules:
+git submodule init
+git submodule update
