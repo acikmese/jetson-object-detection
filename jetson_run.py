@@ -232,9 +232,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 cv2.imwrite(img_path_name, im0, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 utc_prev_time[p.stem] = utc_time
 
-        # Print time (inference-only)
-        LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps)")
-
         # If it is first run and there is an output, let system zip files.
         if not nosave and first_run:
             if len(os.listdir(txt_dir)) > 0:  # if there is a file
@@ -258,6 +255,13 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 LOGGER.info(f"IMAGE zip and transfer process: {img_success}: {img_msg}")
             zip_timer = time_sync()
             first_run_zip = False
+
+        # One loop time
+        t5 = time_sync()
+        fps_loop = int(1 / (t5 - t1))
+
+        # Print time (inference-only)
+        LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps) (loop:{t5 - t4:.3f}s) ({fps_loop}fps)")
 
 
 def parse_opt():
