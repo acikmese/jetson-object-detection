@@ -261,7 +261,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         fps_loop = int(1 / (t5 - t1))
 
         # Print time (inference-only)
-        LOGGER.info(f"{s}done. ({t3 - t2:.3f}s) ({fps}fps) (loop:{t5 - t4:.3f}s) ({fps_loop}fps)")
+        LOGGER.info(f"{s} - ({t3 - t2:.3f}s) ({fps}fps) (loop:{t5 - t1:.3f}s) ({fps_loop}fps)")
 
 
 def parse_opt():
