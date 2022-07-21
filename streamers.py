@@ -44,13 +44,13 @@ def gstreamer_pipeline(
     )
 
 
-def test_csi_camera(source):
-    cap = cv2.VideoCapture(gstreamer_pipeline(sensor_id=source), cv2.CAP_GSTREAMER)
-    if cap is None or not cap.isOpened():
-        return False
-    else:
-        cap.release()
-        return True
+# def test_csi_camera(source):
+#     cap = cv2.VideoCapture(gstreamer_pipeline(sensor_id=source), cv2.CAP_GSTREAMER)
+#     if cap is None or not cap.isOpened():
+#         return False
+#     else:
+#         cap.release()
+#         return True
 
 
 def check_available_csi_cameras():
@@ -60,8 +60,7 @@ def check_available_csi_cameras():
     available_csi_cameras = []
     for i in range(2):
         if os.path.exists("/dev/video%d" % i):
-            if test_csi_camera(i):
-                available_csi_cameras.append(str(i))
+            available_csi_cameras.append(str(i))
     return available_csi_cameras
 
 
