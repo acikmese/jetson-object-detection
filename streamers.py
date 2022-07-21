@@ -10,7 +10,7 @@ from yolov5.utils.general import (LOGGER, check_requirements, clean_str)
 
 
 # Currently there are setting frame rate on CSI Camera on Nano through gstreamer
-# Here we directly select sensor_mode 3 (1280x720, 59.9999 fps)
+# Here we directly select sensor_mode 3 (1640x1232, 30 fps)
 def gstreamer_pipeline(
     sensor_id=0,
     sensor_mode=3,
@@ -44,15 +44,6 @@ def gstreamer_pipeline(
     )
 
 
-# def test_csi_camera(source):
-#     cap = cv2.VideoCapture(gstreamer_pipeline(sensor_id=source), cv2.CAP_GSTREAMER)
-#     if cap is None or not cap.isOpened():
-#         return False
-#     else:
-#         cap.release()
-#         return True
-
-
 def check_available_csi_cameras():
     """
     Check if there is any CSI camera available.
@@ -65,7 +56,6 @@ def check_available_csi_cameras():
 
 
 class LoadCSI:
-    # YOLOv5 streamloader, i.e. `python detect.py --source 'rtsp://example.com/media.mp4'  # RTSP, RTMP, HTTP streams`
     def __init__(self, sources='streams.txt', img_size=640, stride=32, auto=True):
         self.mode = 'stream'
         self.img_size = img_size

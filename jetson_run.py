@@ -101,7 +101,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         csi_cameras = check_available_csi_cameras()
         print(f"CAMERA SOURCES: {csi_cameras}")
         if len(csi_cameras) == 1:
-            weights = ROOT / 'prod_model/model_bs1.engine'
+            weights = ROOT / 'prod_model/model_bs1_medium.engine'
             source = csi_cameras[0]
         elif len(csi_cameras) == 2:
             weights = ROOT / 'prod_model/model_bs2.engine'
