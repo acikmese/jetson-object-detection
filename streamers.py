@@ -56,6 +56,7 @@ def check_available_csi_cameras():
                 available_csi_cameras.append(i)
                 time.sleep(1)
                 cap.release()
+                cv2.destroyAllWindows()
     return available_csi_cameras
 
 
