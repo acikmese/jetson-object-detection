@@ -90,12 +90,6 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             if save_img:  # Set temp and final zip directories for images
                 tmp_img_dir.mkdir(parents=True, exist_ok=True)
                 zip_img_dir.mkdir(parents=True, exist_ok=True)
-        # Save logs to specified path
-        log_file_handler = logging.FileHandler(str(log_dir / "logs") + ".log", mode='a')
-        log_file_handler.setLevel(logging.INFO)
-        log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
-        log_file_handler.setFormatter(log_formatter)
-        LOGGER.addHandler(log_file_handler)
 
     # For CSI cameras, check if they are available and set source accordingly.
     if not nocsi:
@@ -145,6 +139,13 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     first_run_zip = False  # Check if it needs to zip files in first run
 
     for path, im, im0s, vid_cap, s in dataset:
+        # Save logs to specified path
+        log_file_handler = logging.FileHandler(str(log_dir / "logs") + ".log", mode='a')
+        log_file_handler.setLevel(logging.INFO)
+        log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
+        log_file_handler.setFormatter(log_formatter)
+        LOGGER.addHandler(log_file_handler)
+
         t1 = time_sync()
         # Get datetime of current image.
         utc_time = datetime.now(timezone.utc)
@@ -273,12 +274,12 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         fps_loop = int(1 / (t5 - t1))
 
         # Print time
-        LOGGER.info(f"{utc_time} - {s}- ({t3 - t2:.3f}s) ({fps}fps) (loop:{t5 - t1:.3f}s) ({fps_loop}fps)")
+        LOGGER.info(f"{s}- ({t3 - t2:.3f}s) ({fps}fps) (loop:{t5 - t1:.3f}s) ({fps_loop}fps)")
 
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT/'prod_model/model.engine', help='model path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default=ROOT/'prod_model/model_bs2.engine', help='model path(s)')
     parser.add_argument('--source', type=str, default=ROOT/'streams.txt', help='file/dir/URL/glob, 0 for camera')
     parser.add_argument('--data', type=str, default=YOLO_ROOT/'data/coco128.yaml', help='(optional) dataset.yaml')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
