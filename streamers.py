@@ -54,6 +54,7 @@ def check_available_csi_cameras():
             cap = cv2.VideoCapture(gstreamer_pipeline(sensor_id=i), cv2.CAP_GSTREAMER)
             if cap.isOpened():
                 available_csi_cameras.append(i)
+                time.sleep(1)
                 cap.release()
     return available_csi_cameras
 
