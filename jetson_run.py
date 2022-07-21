@@ -22,7 +22,7 @@ from yolov5.utils.general import (LOGGER, check_img_size, check_imshow,
                                   xyxy2xywh)
 from yolov5.utils.plots import Annotator, colors
 from yolov5.utils.torch_utils import select_device, time_sync
-from streamers import LoadCSI, LoadWebcam
+from streamers import LoadCSI, LoadWebcam, check_available_csi_cameras
 from extra_utils import calculate_distance, zip_with_datetime
 
 
@@ -96,6 +96,17 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
         log_file_handler.setFormatter(log_formatter)
         LOGGER.addHandler(log_file_handler)
+
+    if not nocsi:
+        csi_cameras = check_available_csi_cameras()
+        print(csi_cameras)
+        if len(csi_cameras) == 1:
+            weights = ROOT / 'prod_model/model_bs1.engine'
+        elif len(csi_cameras) == 2:
+            weights = ROOT / 'prod_model/model_bs2.engine'
+        else:
+            raise ValueError('No CSI camera found')
+        source = csi_cameras
 
     # Load model
     device = select_device(device)

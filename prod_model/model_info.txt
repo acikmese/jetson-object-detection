@@ -1,2 +1,5 @@
 # Selected model
+# for 2 cameras
 yolov5s_640_bs2.engine
+# for 1 camera
+yolov5s_640_bs1.engine

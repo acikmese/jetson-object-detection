@@ -44,6 +44,17 @@ def gstreamer_pipeline(
     )
 
 
+def check_available_csi_cameras():
+    """
+    Check if there is any CSI camera available.
+    """
+    available_csi_cameras = []
+    for i in range(2):
+        if os.path.exists("/dev/video%d" % i):
+            available_csi_cameras.append(i)
+    return available_csi_cameras
+
+
 class LoadCSI:
     # YOLOv5 streamloader, i.e. `python detect.py --source 'rtsp://example.com/media.mp4'  # RTSP, RTMP, HTTP streams`
     def __init__(self, sources='streams.txt', img_size=640, stride=32, auto=True):
