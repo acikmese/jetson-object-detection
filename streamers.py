@@ -51,7 +51,10 @@ def check_available_csi_cameras():
     available_csi_cameras = []
     for i in range(2):
         if os.path.exists("/dev/video%d" % i):
-            available_csi_cameras.append(str(i))
+            cap = cv2.VideoCapture(gstreamer_pipeline(sensor_id=i), cv2.CAP_GSTREAMER)
+            if cap.isOpened():
+                available_csi_cameras.append(i)
+                cap.release()
     return available_csi_cameras
 
 
