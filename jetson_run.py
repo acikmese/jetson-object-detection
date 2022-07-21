@@ -99,7 +99,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     if not nocsi:
         csi_cameras = check_available_csi_cameras()
-        print(csi_cameras)
+        print(f"TOTAL NUMBER OF CAMERAS: {csi_cameras}")
         if len(csi_cameras) == 1:
             weights = ROOT / 'prod_model/model_bs1.engine'
         elif len(csi_cameras) == 2:
