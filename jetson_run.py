@@ -97,6 +97,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         log_file_handler.setFormatter(log_formatter)
         LOGGER.addHandler(log_file_handler)
 
+    # For CSI cameras, check if they are available and set source accordingly.
     if not nocsi:
         csi_cameras = check_available_csi_cameras()
         print(f"CAMERA SOURCES: {csi_cameras}")

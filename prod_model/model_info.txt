@@ -1,5 +1,6 @@
 # Selected model
 # for 2 cameras
-yolov5s_640_bs2.engine
+model_bs2.engine -> yolov5s_640_bs2.engine
 # for 1 camera
-yolov5s_640_bs1.engine
+model_bs1.engine -> yolov5s_640_bs1.engine
+model_bs1_medium.engine -> yolov5m_640_bs1.engine
