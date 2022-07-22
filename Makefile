@@ -19,5 +19,6 @@ test: prog
 
 commit: prog
 	@echo $$(( $$(cat ./version) + 1 )) > version
+  git add ./version
 	git commit -m "$(RUN_ARGS)"
 .PHONY: commit
