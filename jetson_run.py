@@ -265,7 +265,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             # Update log file, because previous log file is zipped.
             log_file_handler = set_log_file_handler(log_path)  # set log file handler
             LOGGER.addHandler(log_file_handler)  # add log file handler
-            LOGGER.info(f"VERSION: {get_version(ROOT / 'version')}")
+            LOGGER.info(f"VERSION: {get_version(ROOT / 'version')}")  # add version to log
             LOGGER.info(f"LOG zip and transfer process: {log_success}: {log_msg}")
             # Get time diff
             zip_timer = time_sync()

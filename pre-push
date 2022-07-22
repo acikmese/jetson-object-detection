@@ -19,10 +19,22 @@
 # This sample shows how to prevent push of commits where the log message starts
 # with "WIP" (work in progress).
 
-v=$(( $(cat version) + 1 ))
-echo $v > version
-git add ./version
-git commit -m "Version updated to: $v"
-git push
+set -e
+RED='\033[0;31m'
 
-exit 1
+lastCommitMessage=$(git show -s --format=%s)
+if [[ $lastCommitMessage != *"Version updated to:"* ]]; then
+  v=$(( $(cat version) + 1 ))
+  echo $v > version
+  git add ./version
+  git commit -m "Version updated to: $v"
+  echo -e "${RED}
+  |------------------------------------------------|
+  |                                                |
+  |   Version updated to: $v! Please push again!   |
+  |                                                |
+  |------------------------------------------------|"
+  exit 1
+fi
+
+exit 0
