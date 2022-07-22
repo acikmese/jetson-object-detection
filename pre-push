@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # An example hook script to verify what is about to be pushed.  Called by "git
 # push" after it has checked the remote status, but before anything has been
@@ -20,7 +20,7 @@
 # with "WIP" (work in progress).
 
 set -e
-RED='\033[0;31m'
+RED='\033[0;41m'
 
 lastCommitMessage=$(git show -s --format=%s)
 if [[ $lastCommitMessage != *"Version updated to:"* ]]; then
@@ -29,11 +29,10 @@ if [[ $lastCommitMessage != *"Version updated to:"* ]]; then
   git add ./version
   git commit -m "Version updated to: $v"
   echo -e "${RED}
-  |------------------------------------------------|
-  |                                                |
-  |   Version updated to: $v! Please push again!   |
-  |                                                |
-  |------------------------------------------------|"
+                                                    
+                                                    
+     Version updated to: $v! Please push again!     
+                                                    "
   exit 1
 fi
 

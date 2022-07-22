@@ -10,6 +10,10 @@ Uses TensorRT optimized model for inference (done with export module from yolov5
 ```bash
 # Clone repo:  
 git clone https://github.com/acikmese/jetson-object-detection.git
+cd jetson-object-detection
 # Initialize submodules:
 git submodule init
 git submodule update
+# Setup pre-push hook:
+# (Important for version update. It will warn you to push again.)
+make pre-push-hook

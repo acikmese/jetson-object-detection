@@ -2,7 +2,6 @@ import cv2
 import argparse
 import os
 import sys
-import logging
 from pathlib import Path
 from datetime import datetime, timezone
 import torch
@@ -32,7 +31,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         nocsi=False,  # indicates that CSI camera is not used, USB or URL is used
         data=YOLO_ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
-        conf_thres=0.25,  # confidence threshold
+        conf_thres=0.35,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
         max_det=1000,  # maximum detections per image
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -98,13 +97,13 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # For CSI cameras, check if they are available and set source accordingly.
     if not nocsi:
-        csi_cameras = check_available_csi_cameras()
+        csi_cameras = check_available_csi_cameras()  # get available CSI cameras
         print(f"CAMERA SOURCES: {csi_cameras}")
         if len(csi_cameras) == 0:
             raise ValueError('No CSI camera found!')
-        elif len(csi_cameras) == 1:
+        elif len(csi_cameras) == 1:  # if only one camera is available, use it, otherwise, it defaults to two.
             weights = ROOT / 'prod_model/model_bs1.engine'
-            source = csi_cameras[0]
+            source = csi_cameras[0]  # set source to first camera
 
     # Load model
     device = select_device(device)
@@ -125,8 +124,8 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
     model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
     dt, seen = [0.0, 0.0, 0.0], 0
 
-    current_time = datetime.now(timezone.utc)
-    utc_prev_time = dict()  # collect time for each camera
+    current_time = datetime.now(timezone.utc)  # get UTC time
+    utc_prev_time = dict()  # collect time for each camera to have the time difference
     focal = dict()  # collect focal length of each camera
     for i, s in enumerate(dataset.sources):
         source_name = Path(s).stem  # get camera name
@@ -288,7 +287,7 @@ def parse_opt():
     parser.add_argument('--conf-thres', type=float, default=0.35, help='confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
     parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
+    parser.add_argument('--device', default='0', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', action='store_true', help='show results')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     parser.add_argument('--classes', nargs='+', type=int, default=[0, 2, 5, 7], help='filter by class: --classes 0 2')
