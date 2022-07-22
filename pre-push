@@ -23,5 +23,6 @@ v=$(( $(cat version) + 1 ))
 echo $v > version
 git add ./version
 git commit -m "Version updated to: $v"
+git push
 
-exit 0
+exit 1
