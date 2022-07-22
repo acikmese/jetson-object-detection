@@ -25,4 +25,4 @@ git add ./version
 git commit -m "Version updated to: $v"
 git push
 
-exit 1
+exit 0
