@@ -48,10 +48,10 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
         add_distance=True,  # add distance information for some classes
         avg_height=1.75,  # average height of human being (for distance calculation)
         save_img=True,  # Save images in given interval
-        img_save_interval=60,  # in seconds
+        img_save_interval=30,  # in seconds
         annotate_img=True,  # Save annotated images or raw images
         zip_files=True,  # Zip files and transfer to given path
-        zip_files_interval=300,  # in seconds
+        zip_files_interval=60,  # in seconds
         zip_txt_name='zipped_data',  # name of directory to save zipped txt output
         zip_log_name='zipped_logs',  # name of directory to save zipped log data
         zip_img_name='zipped_images',  # name of directory to save zipped images
@@ -242,7 +242,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
                 utc_prev_time[p.stem] = utc_time
 
         # If it is first run and there is an output, let system zip files.
-        if not nosave and first_run:
+        if (not nosave) and first_run:
             if len(os.listdir(txt_dir)) > 0:  # if there is a file
                 for file in os.listdir(txt_dir):
                     file_name = str(txt_dir / file)
@@ -251,7 +251,7 @@ def run(weights=YOLO_ROOT / 'yolov5s.pt',  # model.pt path(s)
             first_run = False
 
         # Check if time passed to zip files
-        if not nosave and zip_files and (first_run_zip or (time_sync() - zip_timer >= zip_files_interval)):
+        if (not nosave) and zip_files and (first_run_zip or (time_sync() - zip_timer >= zip_files_interval)):
             # Zip and move txt output
             txt_success, txt_msg = zip_with_datetime(txt_dir, tmp_txt_dir, zip_txt_dir, utc_time)
             LOGGER.info(f"TXT zip and transfer process: {txt_success}: {txt_msg}")
