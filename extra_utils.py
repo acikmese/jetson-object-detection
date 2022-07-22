@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 import numpy as np
 from yolov5.utils.general import is_docker, is_colab, LOGGER
+import logging
 
 
 def path_with_date(path, date_time, mkdir=False):
@@ -66,6 +67,25 @@ def zip_with_datetime(results_dir, tmp_dir, output_dir, time_obj):
         return True, f"Successfully zipped and transferred. {time_str}"
     except Exception as e:
         return False, e
+
+
+def set_log_file_handler(log_file_path):
+    # Save logs to specified path
+    log_file_handler = logging.FileHandler(log_file_path, mode='a')
+    log_file_handler.setLevel(logging.INFO)
+    log_formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
+    log_file_handler.setFormatter(log_formatter)
+    return log_file_handler
+
+
+def get_version(version_path):
+    try:
+        with open(version_path, 'r') as f:
+            version = f.readline()
+        return version
+    except Exception as e:
+        LOGGER.warning(f'WARNING: Could not read version file.\n{e}')
+        return None
 
 
 # THIS PART IS NOT NEEDED RIGHT NOW!
