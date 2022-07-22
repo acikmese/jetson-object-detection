@@ -3,6 +3,9 @@
 # Found in following link.
 # https://unix.stackexchange.com/a/205539
 
+# Give permissions
+sudo chmod 777 -R /home/ff/jetson-object-detection
+
 # Remove old (2 days) zipped data.
 find /home/ff/jetson-object-detection/zipped_data/ -mindepth 1 -type f -mtime +2 -delete
 

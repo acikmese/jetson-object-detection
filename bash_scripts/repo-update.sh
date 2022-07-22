@@ -6,7 +6,7 @@ echo "Updating Repo!"
 DISPLAY_FILE_PATH=$(adb shell ls /storage/emulated/0/fireplay/camera/source/source*.zip | head -1)
 # If we have a path, get the name of file in display.
 if [ -n "$DISPLAY_FILE_PATH" ]; then
-    DISPLAY_FILE="$(basename -- $DISPLAY_FILE_PATH)"
+    DISPLAY_FILE="$(basename -- "$DISPLAY_FILE_PATH")"
 else
     DISPLAY_FILE=""
 fi
@@ -18,6 +18,7 @@ if [ -n "$LOCAL_FILE_PATH" ]; then
     LOCAL_FILE="$(basename -- $LOCAL_FILE_PATH)"
 else
     mkdir -p /home/ff/tmp_repo_dir
+    sudo chmod 777 -R /home/ff/tmp_repo_dir  # Give permissions
     LOCAL_FILE=""
 fi
 
@@ -26,10 +27,10 @@ if [ -n "$DISPLAY_FILE_PATH" ] && [ "$LOCAL_FILE" != "$DISPLAY_FILE" ]; then
     NEW_LOCAL_PATH="/home/ff/tmp_repo_dir/"$DISPLAY_FILE""
 
     echo "Removing old local file."
-    rm -rf $LOCAL_FILE_PATH
+    rm -rf "$LOCAL_FILE_PATH"
 
     echo "Pull new repo!"
-    adb pull $DISPLAY_FILE_PATH /home/ff/tmp_repo_dir/
+    adb pull "$DISPLAY_FILE_PATH" /home/ff/tmp_repo_dir/
     echo "New repo pulled, changing files!"
 
     # Stop object detection service
@@ -39,9 +40,11 @@ if [ -n "$DISPLAY_FILE_PATH" ] && [ "$LOCAL_FILE" != "$DISPLAY_FILE" ]; then
 
     # Unzip to directory
     unzip $NEW_LOCAL_PATH -d /home/ff/tmp_repo_dir/
+    sudo chmod 777 -R /home/ff/tmp_repo_dir
     echo "Files are unzipped!"
 
     # Copy new repo content to current object detection framework path
+    sudo chmod 777 -R /home/ff/jetson-object-detection
     rsync -az /home/ff/tmp_repo_dir/jetson-object-detection/ /home/ff/jetson-object-detection/
     echo "Repo files are changed!"
 

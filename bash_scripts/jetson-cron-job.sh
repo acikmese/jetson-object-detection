@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Give permissions
+sudo chmod 777 -R /home/ff/jetson-object-detection
+sudo chmod 777 -R /home/ff/tmp_repo_dir
+
 # 1. Zip cron log and transfer to zipped logs.
 zip /home/ff/jetson-object-detection/zipped_logs/cron_log_"`date +"%s"`".zip . -i /home/ff/jetson-object-detection$
 truncate -s 0 /home/ff/jetson-object-detection/cron_log/cron_log.log  # empty file
